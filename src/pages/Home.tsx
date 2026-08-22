@@ -1,47 +1,13 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Compass, TrendingUp, AlertTriangle, Lightbulb, Briefcase, Network, ArrowRight } from 'lucide-react';
-
+import { TrendingUp, AlertTriangle, Lightbulb, Briefcase, Network, ArrowRight } from 'lucide-react';
+import Navbar from '../components/Navbar';
+import Footer from '../components/Footer';
 const Home: React.FC = () => {
   return (
-    <div className="min-h-screen bg-[#FFFDF5] text-gray-800 font-sans selection:bg-[#F4C542] selection:text-slate-900 overflow-x-hidden">
+    <div className="min-h-screen bg-[#FFFDF5] text-gray-800 font-sans selection:bg-[#F4C542] selection:text-slate-900 overflow-x-hidden pt-20">
       {/* Navigation Bar */}
-      <nav className="sticky top-0 z-50 bg-[#FFFDF5]/80 backdrop-blur-md border-b border-gray-200/50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-20">
-            <div className="flex items-center gap-2">
-              <div className="p-2 bg-slate-900 text-[#F4C542] rounded-lg">
-                <Compass size={24} strokeWidth={2.5} />
-              </div>
-              <span className="font-bold text-xl text-slate-900 tracking-tight">
-                UzCombinator Research Lab
-              </span>
-            </div>
-            
-            {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center gap-8">
-              <a href="#about" className="text-sm font-medium text-gray-600 hover:text-slate-900 transition-colors">About</a>
-              <a href="#methodology" className="text-sm font-medium text-gray-600 hover:text-slate-900 transition-colors">Methodology</a>
-              <a href="#contact" className="text-sm font-medium text-gray-600 hover:text-slate-900 transition-colors">Contact</a>
-              <Link 
-                to="/admin" 
-                className="text-sm font-medium text-gray-600 hover:text-slate-900 transition-colors"
-              >
-                Login
-              </Link>
-            </div>
-
-            {/* Mobile menu button (Simplified for now) */}
-            <div className="md:hidden flex items-center">
-              <button className="text-gray-600 hover:text-slate-900 focus:outline-none">
-                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-              </button>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <Navbar />
 
       {/* Hero Section */}
       <section className="relative pt-24 pb-32 lg:pt-36 lg:pb-40 overflow-hidden">
@@ -61,10 +27,10 @@ const Home: React.FC = () => {
               This research explores how people in Uzbekistan and post-Soviet Central Asia evaluate gains, losses, uncertainty, startup opportunities, and investment decisions.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
-              <button className="inline-flex justify-center items-center gap-2 px-8 py-4 rounded-xl bg-[#F4C542] text-slate-900 font-semibold text-lg hover:bg-[#e3b632] hover:-translate-y-0.5 transition-all shadow-[0_8px_20px_-6px_rgba(244,197,66,0.5)]">
+              <Link to="/survey" className="inline-flex justify-center items-center gap-2 px-8 py-4 rounded-xl bg-[#F4C542] text-slate-900 font-semibold text-lg hover:bg-[#e3b632] hover:-translate-y-0.5 transition-all shadow-[0_8px_20px_-6px_rgba(244,197,66,0.5)]">
                 Take the Survey
                 <ArrowRight size={20} />
-              </button>
+              </Link>
               <button className="inline-flex justify-center items-center gap-2 px-8 py-4 rounded-xl bg-white border-2 border-gray-200 text-slate-900 font-semibold text-lg hover:border-slate-900 hover:bg-slate-50 transition-all">
                 Explore the Research
               </button>
@@ -185,33 +151,15 @@ const Home: React.FC = () => {
           <p className="text-xl text-gray-300 mb-10 max-w-2xl mx-auto">
             Your insights are crucial. Participation is completely voluntary, 100% anonymous, and takes approximately 10 minutes to complete.
           </p>
-          <button className="inline-flex justify-center items-center gap-2 px-10 py-5 rounded-xl bg-[#F4C542] text-slate-900 font-bold text-xl hover:bg-[#e3b632] hover:-translate-y-1 transition-all shadow-[0_8px_20px_-6px_rgba(244,197,66,0.3)]">
+          <Link to="/survey" className="inline-flex justify-center items-center gap-2 px-10 py-5 rounded-xl bg-[#F4C542] text-slate-900 font-bold text-xl hover:bg-[#e3b632] hover:-translate-y-1 transition-all shadow-[0_8px_20px_-6px_rgba(244,197,66,0.3)]">
             Start Survey
             <ArrowRight size={24} />
-          </button>
+          </Link>
         </div>
       </section>
 
       {/* Footer */}
-      <footer id="contact" className="bg-white py-12 border-t border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-            <div className="flex items-center gap-2">
-              <Compass size={20} className="text-slate-900" />
-              <span className="font-bold text-lg text-slate-900">UzCombinator</span>
-            </div>
-            
-            <div className="text-gray-500 text-sm">
-              &copy; 2026 UzCombinator Research Lab. All rights reserved.
-            </div>
-
-            <div className="flex gap-6">
-              <a href="#" className="text-sm text-gray-500 hover:text-slate-900 transition-colors">Privacy Policy</a>
-              <a href="#" className="text-sm text-gray-500 hover:text-slate-900 transition-colors">Contact</a>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 };

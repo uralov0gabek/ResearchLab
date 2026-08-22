@@ -1,17 +1,20 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Home from './pages/Home';
 import Login from './pages/Login';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import Contact from './pages/Contact';
+import PublicSurvey from './pages/PublicSurvey';
 
 import AdminLayout from './components/AdminLayout';
+import ProtectedRoute from './components/ProtectedRoute';
 
 // Admin Pages
 import AdminOverview from './pages/admin/AdminOverview';
 import SurveyBuilder from './pages/admin/SurveyBuilder';
 import CPTTaskBuilder from './pages/admin/CPTTaskBuilder';
-import LogicBranching from './pages/admin/LogicBranching';
 import Responses from './pages/admin/Responses';
-import CPTResults from './pages/admin/CPTResults';
+import Results from './pages/admin/Results';
 import Settings from './pages/admin/Settings';
 
 const NotFound = () => (
@@ -27,18 +30,25 @@ const App: React.FC = () => {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/survey" element={<PublicSurvey />} />
           
           {/* Protected Admin Routes */}
           <Route 
             path="/admin" 
-            element={<AdminLayout />}
+            element={
+              <ProtectedRoute>
+                <AdminLayout />
+              </ProtectedRoute>
+            }
           >
-            <Route index element={<AdminOverview />} />
+            <Route index element={<Navigate to="overview" replace />} />
+            <Route path="overview" element={<AdminOverview />} />
             <Route path="survey-builder" element={<SurveyBuilder />} />
             <Route path="cpt-builder" element={<CPTTaskBuilder />} />
-            <Route path="logic" element={<LogicBranching />} />
             <Route path="responses" element={<Responses />} />
-            <Route path="cpt-results" element={<CPTResults />} />
+            <Route path="results" element={<Results />} />
             <Route path="settings" element={<Settings />} />
           </Route>
           

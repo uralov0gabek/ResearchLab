@@ -5,10 +5,9 @@ import {
   LayoutDashboard,
   FileText,
   MousePointer2,
-  GitBranch,
   Users,
   LineChart,
-  Settings,
+  Settings as SettingsIcon,
   LogOut
 } from 'lucide-react';
 
@@ -21,17 +20,16 @@ const AdminLayout: React.FC = () => {
   };
 
   const navItems = [
-    { name: 'Overview', path: '/admin', end: true, icon: LayoutDashboard },
+    { name: 'Overview', path: '/admin/overview', icon: LayoutDashboard },
     { name: 'Survey Builder', path: '/admin/survey-builder', icon: FileText },
     { name: 'CPT Task Builder', path: '/admin/cpt-builder', icon: MousePointer2 },
-    { name: 'Logic & Branching', path: '/admin/logic', icon: GitBranch },
     { name: 'Responses', path: '/admin/responses', icon: Users },
-    { name: 'CPT Results', path: '/admin/cpt-results', icon: LineChart },
-    { name: 'Settings', path: '/admin/settings', icon: Settings },
+    { name: 'Results', path: '/admin/results', icon: LineChart },
+    { name: 'Settings', path: '/admin/settings', icon: SettingsIcon },
   ];
 
   return (
-    <div className="flex h-screen bg-gray-50 font-sans">
+    <div className="flex h-screen bg-[#FFFDF5] font-sans">
       {/* Sidebar */}
       <div className="w-64 bg-slate-900 text-white flex flex-col shadow-xl">
         <div className="p-6">
@@ -46,7 +44,6 @@ const AdminLayout: React.FC = () => {
               <NavLink
                 key={item.path}
                 to={item.path}
-                end={item.end}
                 className={({ isActive }) =>
                   `flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                     isActive
@@ -74,7 +71,7 @@ const AdminLayout: React.FC = () => {
       </div>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto bg-gray-50 p-8">
+      <main className="flex-1 overflow-y-auto p-8">
         <div className="max-w-6xl mx-auto">
           <Outlet />
         </div>
