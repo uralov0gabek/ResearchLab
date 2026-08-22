@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { PlusCircle, Edit, Trash2, ArrowUp, ArrowDown, Save, Check, X, AlertCircle } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, ArrowUp, ArrowDown, Save, X, AlertCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
 // Types
