@@ -40,6 +40,11 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        brand: {
+          cream: "#FFFDF5",
+          gold: "#F4C542",
+          charcoal: "#333333",
+        },
       },
     },
   },
