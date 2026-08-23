@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
-  Plus, Trash2, Copy, ArrowUp, ArrowDown, Save, AlignLeft, List, Hash, LayoutGrid, CheckSquare
+  Plus, Trash2, Copy, ArrowUp, ArrowDown, Save, AlignLeft, List, Hash, LayoutGrid, CheckSquare, Loader2
 } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
 
 type QuestionType = 'single_choice' | 'multiple_choice' | 'short_text' | 'number_input' | 'cpt_task';
 
@@ -14,26 +15,44 @@ interface Question {
 }
 
 const SurveyBuilder: React.FC = () => {
-  const [questions, setQuestions] = useState<Question[]>([
-    { 
-      id: '1', 
-      type: 'single_choice', 
-      title: 'How often do you make investment decisions?', 
-      options: ['Daily', 'Weekly', 'Monthly', 'Rarely'],
-      required: true
-    },
-    { 
-      id: '2', 
-      type: 'cpt_task', 
-      title: 'Risk Aversion Assessment (Standard)', 
-      options: [],
-      required: true
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    fetchQuestions();
+  }, []);
+
+  const fetchQuestions = async () => {
+    try {
+      setIsLoading(true);
+      const { data, error } = await supabase
+        .from('questions')
+        .select('*')
+        .order('created_at', { ascending: true });
+      
+      if (error) throw error;
+      if (data) {
+        // Map database fields to the UI state
+        setQuestions(data.map((row: any) => ({
+          id: row.id,
+          type: row.type,
+          title: row.text,
+          options: row.options || [],
+          required: row.required
+        })));
+      }
+    } catch (err) {
+      console.error('Error fetching questions:', err);
+      alert('Failed to load questions.');
+    } finally {
+      setIsLoading(false);
     }
-  ]);
+  };
 
   const addQuestion = () => {
     const newQ: Question = {
-      id: Date.now().toString(),
+      id: crypto.randomUUID(),
       type: 'single_choice',
       title: '',
       options: ['Option 1'],
@@ -54,7 +73,7 @@ const SurveyBuilder: React.FC = () => {
     const qToDuplicate = questions[index];
     const newQ: Question = {
       ...qToDuplicate,
-      id: Date.now().toString(),
+      id: crypto.randomUUID(),
       title: qToDuplicate.title + ' (Copy)'
     };
     const newQuestions = [...questions];
@@ -104,9 +123,48 @@ const SurveyBuilder: React.FC = () => {
     }));
   };
 
-  const handleSave = () => {
-    console.log('Saving to DB...', questions);
-    alert('Saved successfully (UI only for now)');
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      // Upsert all current questions
+      const questionsToUpsert = questions.map((q, index) => ({
+        id: q.id,
+        text: q.title,
+        type: q.type,
+        options: q.options,
+        order_index: index,
+        required: q.required
+      }));
+
+      const { error: upsertError } = await supabase
+        .from('questions')
+        .upsert(questionsToUpsert);
+
+      if (upsertError) throw upsertError;
+
+      // To handle deletions, we can fetch all IDs from the DB, compare with current, and delete the diff.
+      const { data: dbQuestions, error: fetchError } = await supabase.from('questions').select('id');
+      if (fetchError) throw fetchError;
+
+      const currentIds = new Set(questions.map(q => q.id));
+      const idsToDelete = dbQuestions?.filter(q => !currentIds.has(q.id)).map(q => q.id) || [];
+
+      if (idsToDelete.length > 0) {
+        const { error: deleteError } = await supabase
+          .from('questions')
+          .delete()
+          .in('id', idsToDelete);
+        
+        if (deleteError) throw deleteError;
+      }
+
+      alert('Saved successfully!');
+    } catch (error) {
+      console.error('Supabase Error:', error);
+      alert('Failed to save questions.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -146,16 +204,29 @@ const SurveyBuilder: React.FC = () => {
           </div>
           <button 
             onClick={handleSave}
-            className="flex items-center gap-2 px-6 py-2.5 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors shadow-md font-medium shrink-0"
+            disabled={isSaving || isLoading}
+            className={`flex items-center gap-2 px-6 py-2.5 rounded-lg transition-colors shadow-md font-medium shrink-0 ${
+              isSaving || isLoading ? 'bg-slate-700 text-slate-300 cursor-not-allowed' : 'bg-slate-900 text-white hover:bg-slate-800'
+            }`}
           >
-            <Save size={18} />
-            Publish / Save Changes
+            {isSaving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+            {isSaving ? 'Saving...' : 'Publish / Save Changes'}
           </button>
         </div>
         
         {/* Questions */}
         <div className="space-y-6 max-w-4xl mx-auto pb-12">
-          {questions.map((q, index) => (
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center py-20 text-slate-500">
+              <Loader2 className="w-10 h-10 animate-spin mb-4 text-[#F4C542]" />
+              <p className="font-medium text-lg">Loading questions...</p>
+            </div>
+          ) : questions.length === 0 ? (
+            <div className="text-center py-20 bg-white rounded-2xl border border-gray-200 shadow-sm">
+              <h3 className="text-xl font-semibold text-slate-700 mb-2">No questions yet</h3>
+              <p className="text-gray-500 mb-6">Start building your survey by adding a new question below.</p>
+            </div>
+          ) : questions.map((q, index) => (
             <div key={q.id} className="bg-white rounded-2xl shadow-sm border border-gray-200/80 overflow-hidden transition-all hover:shadow-md">
               {/* Card Header & Actions */}
               <div className="flex items-center justify-between p-4 bg-gray-50/50 border-b border-gray-100">
@@ -318,6 +389,9 @@ const SurveyBuilder: React.FC = () => {
             <Plus size={22} strokeWidth={2.5} />
             Add New Question
           </button>
+          
+          {/* Close the mapping conditional properly */}
+          {questions.length > 0 ? null : null}
         </div>
       </div>
     </div>

@@ -1,46 +1,34 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, ArrowLeft, CheckCircle, X, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabase';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import CPTQuestionCard from '../components/CPTQuestionCard';
 
 // Mock Data
-type QuestionType = 'short_text' | 'single_choice' | 'multiple_choice';
+type QuestionType = 'short_text' | 'single_choice' | 'multiple_choice' | 'number_input' | 'cpt_task';
 
 interface Question {
   id: string;
   type: QuestionType;
   text: string;
   options?: string[];
+  dependsOn?: {
+    questionId: string;
+    expectedValue: string;
+  };
+  cptData?: {
+    sureAmount: number;
+    gambleAmount1: number;
+    prob1: number;
+    gambleAmount2: number;
+    prob2: number;
+  };
 }
 
-const MOCK_QUESTIONS: Question[] = [
-  {
-    id: 'q1',
-    type: 'short_text',
-    text: 'What year were you born?',
-  },
-  {
-    id: 'q2',
-    type: 'single_choice',
-    text: 'What is your current professional role?',
-    options: ['Startup Founder', 'Venture Capitalist / Investor', 'Corporate Professional', 'Student', 'Other'],
-  },
-  {
-    id: 'q3',
-    type: 'multiple_choice',
-    text: 'Which of the following have you done in the past 5 years? (Select all that apply)',
-    options: ['Invested in a startup', 'Founded a company', 'Worked at a startup', 'None of the above'],
-  },
-  {
-    id: 'q4',
-    type: 'single_choice',
-    text: 'Imagine you are offered a gamble on the toss of a coin. If it shows tails, you lose $1,000. If it shows heads, you win $X. What is the minimum value of X for which you would accept this gamble?',
-    options: ['$1,000', '$1,500', '$2,000', '$2,500', 'Would not accept for any amount'],
-  }
-];
+// MOCK_QUESTIONS removed, using Supabase
 
 const STORAGE_KEY = 'survey_session_data';
 
@@ -48,11 +36,41 @@ const PublicSurvey: React.FC = () => {
   const [sessionId, setSessionId] = useState<string>('');
   const [currentStep, setCurrentStep] = useState(0);
   const [answers, setAnswers] = useState<Record<string, any>>({});
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const navigate = useNavigate();
+
+  // Fetch questions from Supabase
+  useEffect(() => {
+    const fetchQuestions = async () => {
+      try {
+        setIsLoading(true);
+        const { data, error } = await supabase
+          .from('questions')
+          .select('*')
+          .order('created_at', { ascending: true });
+        
+        if (error) throw error;
+        if (data) {
+          // Map DB 'title' to UI 'text' if needed, assuming the DB schema uses 'title' based on SurveyBuilder
+          const mappedData = data.map(q => ({
+            ...q,
+            text: q.title || q.text || ''
+          }));
+          setQuestions(mappedData as Question[]);
+        }
+      } catch (err) {
+        console.error('Error fetching questions:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchQuestions();
+  }, []);
 
   // Load state from sessionStorage
   useEffect(() => {
@@ -87,12 +105,26 @@ const PublicSurvey: React.FC = () => {
     navigate('/');
   };
 
+  const visibleQuestions = useMemo(() => {
+    return questions.filter(q => {
+      if (!q.dependsOn) return true;
+      const dependentAnswer = answers[q.dependsOn.questionId];
+      return dependentAnswer === q.dependsOn.expectedValue;
+    });
+  }, [answers, questions]);
+
+  useEffect(() => {
+    if (visibleQuestions.length > 0 && currentStep >= visibleQuestions.length) {
+      setCurrentStep(visibleQuestions.length - 1);
+    }
+  }, [visibleQuestions, currentStep]);
+
   const handleAnswerChange = (questionId: string, value: any) => {
     setAnswers(prev => ({ ...prev, [questionId]: value }));
   };
 
   const handleNext = () => {
-    if (currentStep < MOCK_QUESTIONS.length - 1) {
+    if (currentStep < visibleQuestions.length - 1) {
       setCurrentStep(prev => prev + 1);
     }
   };
@@ -141,7 +173,7 @@ const PublicSurvey: React.FC = () => {
     }
   };
 
-  const question = MOCK_QUESTIONS[currentStep];
+  const question = visibleQuestions[currentStep];
 
   // Validation
   let isCurrentAnswerValid = false;
@@ -150,16 +182,16 @@ const PublicSurvey: React.FC = () => {
   
   if (question?.type === 'short_text') {
     isCurrentAnswerValid = typeof answer === 'string' && answer.trim().length > 0;
-    
-    // Custom validation for birth year
-    if (question.id === 'q1' && isCurrentAnswerValid) {
-      const year = parseInt(answer, 10);
-      if (isNaN(year) || year < 1940 || year > 2010) {
+  } else if (question?.type === 'number_input') {
+    isCurrentAnswerValid = typeof answer === 'string' && answer.trim().length > 0;
+    if (isCurrentAnswerValid) {
+      const age = parseInt(answer, 10);
+      if (isNaN(age) || age < 18 || age > 120) {
         isCurrentAnswerValid = false;
-        validationError = 'Please enter a valid year between 1940 and 2010.';
+        validationError = 'Please enter a valid age between 18 and 120.';
       }
     }
-  } else if (question?.type === 'single_choice') {
+  } else if (question?.type === 'single_choice' || question?.type === 'cpt_task') {
     isCurrentAnswerValid = !!answer;
   } else if (question?.type === 'multiple_choice') {
     isCurrentAnswerValid = Array.isArray(answer) && answer.length > 0;
@@ -194,6 +226,37 @@ const PublicSurvey: React.FC = () => {
     );
   }
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex flex-col bg-[#FFFDF5] text-gray-800 font-sans">
+        <Navbar />
+        <main className="flex-grow flex items-center justify-center p-4">
+          <div className="flex flex-col items-center">
+            <Loader2 className="w-12 h-12 text-[#F4C542] animate-spin mb-4" />
+            <p className="text-gray-500 font-medium">Loading survey...</p>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (questions.length === 0) {
+    return (
+      <div className="min-h-screen flex flex-col bg-[#FFFDF5] text-gray-800 font-sans">
+        <Navbar />
+        <main className="flex-grow flex items-center justify-center p-4">
+          <div className="text-center bg-white p-8 rounded-2xl shadow-sm border border-gray-100 max-w-md">
+            <h2 className="text-2xl font-bold text-slate-900 mb-4">No Survey Available</h2>
+            <p className="text-gray-600 mb-6">There are currently no published questions. Please check back later.</p>
+            <button onClick={() => navigate('/')} className="px-6 py-2 bg-slate-900 text-white rounded-lg">Return Home</button>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-[#FFFDF5] text-gray-800 font-sans">
       <Navbar />
@@ -205,8 +268,8 @@ const PublicSurvey: React.FC = () => {
           <div className="mb-10">
             <div className="flex justify-between items-center mb-2">
               <div className="flex justify-between w-full text-sm font-medium text-gray-500 mr-4">
-                <span>Question {currentStep + 1} of {MOCK_QUESTIONS.length}</span>
-                <span>{Math.round((currentStep / MOCK_QUESTIONS.length) * 100)}% completed</span>
+                <span>Question {currentStep + 1} of {visibleQuestions.length}</span>
+                <span>{Math.round(((currentStep + 1) / visibleQuestions.length) * 100)}% completed</span>
               </div>
               <button 
                 onClick={handleExit}
@@ -219,7 +282,7 @@ const PublicSurvey: React.FC = () => {
             <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
               <div 
                 className="h-full bg-[#F4C542] transition-all duration-300 ease-out rounded-full"
-                style={{ width: `${(currentStep / MOCK_QUESTIONS.length) * 100}%` }}
+                style={{ width: `${((currentStep + 1) / visibleQuestions.length) * 100}%` }}
               ></div>
             </div>
           </div>
@@ -254,6 +317,30 @@ const PublicSurvey: React.FC = () => {
                         <p className="text-red-500 text-sm mt-2">{validationError}</p>
                       )}
                     </div>
+                  )}
+
+                  {question.type === 'number_input' && (
+                    <div className="space-y-2">
+                      <input
+                        type="number"
+                        value={answers[question.id] || ''}
+                        onChange={(e) => handleAnswerChange(question.id, e.target.value)}
+                        className="w-full text-xl p-4 border-b-2 border-gray-200 focus:border-[#F4C542] outline-none bg-transparent transition-colors"
+                        placeholder="Type your number here..."
+                        autoFocus
+                      />
+                      {validationError && (
+                        <p className="text-red-500 text-sm mt-2">{validationError}</p>
+                      )}
+                    </div>
+                  )}
+
+                  {question.type === 'cpt_task' && question.cptData && (
+                    <CPTQuestionCard
+                      cptData={question.cptData}
+                      selectedValue={answers[question.id]}
+                      onSelect={(choice) => handleAnswerChange(question.id, choice)}
+                    />
                   )}
 
                   {question.type === 'single_choice' && question.options && (
@@ -351,7 +438,7 @@ const PublicSurvey: React.FC = () => {
                 Back
               </button>
 
-              {currentStep < MOCK_QUESTIONS.length - 1 ? (
+              {currentStep < visibleQuestions.length - 1 ? (
                 <button
                   onClick={handleNext}
                   disabled={!isCurrentAnswerValid}
