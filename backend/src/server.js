@@ -11,9 +11,12 @@ const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(helmet());
-app.use(cors({
-  origin: [process.env.FRONTEND_URL || 'http://localhost:5173', 'https://loss-aversion-research.vercel.app']
-}));
+const corsOptions = {
+  origin: ['http://localhost:5173', 'https://research-lab-v.vercel.app/'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
+};
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // Routes

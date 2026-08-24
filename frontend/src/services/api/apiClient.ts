@@ -12,7 +12,8 @@ export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+  const url = `${API_BASE_URL.replace(/\/$/, '')}/${endpoint.replace(/^\//, '')}`;
+  const response = await fetch(url, {
     ...options,
     headers,
   });
