@@ -15,14 +15,14 @@ export const Hero: React.FC = () => {
           <div className="flex flex-col md:flex-row justify-center gap-4">
             <a 
               href="#participate" 
-              className="inline-flex items-center justify-center px-8 py-4 text-lg font-bold rounded-full text-brand-charcoal bg-brand-gold hover:bg-brand-gold/90 transition-colors shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 duration-200"
+              className="group inline-flex items-center justify-center px-8 py-4 text-lg font-bold rounded-full text-brand-charcoal bg-brand-gold transition-all duration-300 ease-in-out shadow-lg hover:shadow-[0_8px_30px_rgb(244,197,66,0.4)] transform hover:-translate-y-1"
             >
               Start Survey
-              <ArrowRight className="ml-2 w-5 h-5" />
+              <ArrowRight className="ml-2 w-5 h-5 transition-transform duration-300 group-hover:translate-x-1" />
             </a>
             <a 
               href="#about" 
-              className="inline-flex items-center justify-center px-8 py-4 text-lg font-medium rounded-full text-brand-charcoal bg-white border-2 border-brand-charcoal/10 hover:border-brand-charcoal/30 hover:bg-gray-50 transition-colors"
+              className="inline-flex items-center justify-center px-8 py-4 text-lg font-medium rounded-full text-brand-charcoal bg-white border-2 border-brand-charcoal/10 transition-all duration-300 ease-in-out hover:border-brand-charcoal/30 hover:bg-gray-50 shadow-sm hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transform hover:-translate-y-1"
             >
               Learn More
             </a>

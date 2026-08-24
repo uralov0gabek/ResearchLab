@@ -54,7 +54,7 @@ const Navbar: React.FC = () => {
                 <a 
                   key={link.name}
                   href={link.href} 
-                  className="text-sm font-medium text-gray-600 hover:text-slate-900 transition-colors p-2"
+                  className="text-sm font-medium text-gray-600 hover:text-slate-900 transition-colors py-2 px-1 mx-1 hover-slide-line"
                 >
                   {link.name}
                 </a>
@@ -62,7 +62,7 @@ const Navbar: React.FC = () => {
                 <Link 
                   key={link.name}
                   to={link.href} 
-                  className="text-sm font-medium text-gray-600 hover:text-slate-900 transition-colors p-2"
+                  className="text-sm font-medium text-gray-600 hover:text-slate-900 transition-colors py-2 px-1 mx-1 hover-slide-line"
                 >
                   {link.name}
                 </Link>

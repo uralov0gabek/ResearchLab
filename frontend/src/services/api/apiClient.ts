@@ -6,11 +6,28 @@ export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
   const { data: { session } } = await supabase.auth.getSession();
   const token = session?.access_token;
 
-  const headers = {
+  const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    ...options.headers,
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  // Merge any custom headers provided in options
+  if (options.headers) {
+    if (options.headers instanceof Headers) {
+      options.headers.forEach((value, key) => {
+        headers[key] = value;
+      });
+    } else if (Array.isArray(options.headers)) {
+      options.headers.forEach(([key, value]) => {
+        headers[key] = value;
+      });
+    } else {
+      Object.assign(headers, options.headers);
+    }
+  }
 
   const url = `${API_BASE_URL.replace(/\/$/, '')}/${endpoint.replace(/^\//, '')}`;
   const response = await fetch(url, {

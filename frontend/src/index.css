@@ -67,6 +67,25 @@
 }
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@layer components {
+  .hover-slide-line {
+    @apply relative no-underline inline-block;
+  }
+  .hover-slide-line::after {
+    content: '';
+    @apply absolute w-0 h-[2px] -bottom-1 left-0 bg-current transition-all duration-300 ease-in-out;
+  }
+  .hover-slide-line:hover::after {
+    @apply w-full;
+  }
+}
+
+@layer base {
   * {
     @apply border-border;
   }
