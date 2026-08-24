@@ -97,6 +97,30 @@ const SurveyBuilder: React.FC = () => {
     }
   };
 
+  const handleDeleteModule = async (e: React.MouseEvent, moduleId: string) => {
+    e.stopPropagation();
+    
+    if (window.confirm('Are you sure you want to delete this module? All questions inside it will also be deleted.')) {
+      try {
+        const { error } = await supabase
+          .from('survey_modules')
+          .delete()
+          .eq('id', moduleId);
+          
+        if (error) throw error;
+        
+        if (activeModule === moduleId) {
+          setActiveModule(null);
+        }
+        
+        fetchModules();
+      } catch (err) {
+        console.error('Error deleting module:', err);
+        alert('Failed to delete module.');
+      }
+    }
+  };
+
   const addModule = async () => {
     const title = prompt("Enter new module title:");
     if (!title) return;
@@ -108,9 +132,10 @@ const SurveyBuilder: React.FC = () => {
         .single();
         
       if (error) throw error;
+      
+      await fetchModules();
+      
       if (data) {
-        const newModule = { ...data, question_count: 0 };
-        setModules([...modules, newModule]);
         setActiveModule(data.id);
       }
     } catch (err) {
@@ -262,12 +287,21 @@ const SurveyBuilder: React.FC = () => {
               <div 
                 key={mod.id}
                 onClick={() => setActiveModule(mod.id)}
-                className={`p-4 rounded-xl cursor-pointer transition-all ${activeModule === mod.id ? 'bg-white border border-gray-200 shadow-sm border-l-4 border-l-[#F4C542]' : 'hover:bg-white border border-transparent hover:border-gray-200'}`}
+                className={`p-4 rounded-xl cursor-pointer transition-all flex justify-between items-start group ${activeModule === mod.id ? 'bg-white border border-gray-200 shadow-sm border-l-4 border-l-[#F4C542]' : 'hover:bg-white border border-transparent hover:border-gray-200'}`}
               >
-                <h3 className={`font-semibold ${activeModule === mod.id ? 'text-slate-800' : 'text-slate-700'}`}>{mod.title}</h3>
-                <p className="text-xs text-gray-500 mt-1.5 flex items-center gap-2">
-                  <span className={`w-2 h-2 rounded-full ${mod.status === 'active' ? 'bg-green-500' : 'bg-gray-300'}`}></span> {mod.status === 'active' ? 'Active' : 'Draft'} • {activeModule === mod.id ? questions.length : mod.question_count} Questions
-                </p>
+                <div>
+                  <h3 className={`font-semibold ${activeModule === mod.id ? 'text-slate-800' : 'text-slate-700'}`}>{mod.title}</h3>
+                  <p className="text-xs text-gray-500 mt-1.5 flex items-center gap-2">
+                    <span className={`w-2 h-2 rounded-full ${mod.status === 'active' ? 'bg-green-500' : 'bg-gray-300'}`}></span> {mod.status === 'active' ? 'Active' : 'Draft'} • {activeModule === mod.id ? questions.length : mod.question_count} Questions
+                  </p>
+                </div>
+                <button 
+                  onClick={(e) => handleDeleteModule(e, mod.id)}
+                  className="text-gray-300 hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity rounded-md hover:bg-red-50"
+                  title="Delete Module"
+                >
+                  <Trash2 size={16} />
+                </button>
               </div>
             ))
           )}

@@ -3,9 +3,19 @@ import { supabase } from '../../lib/supabase';
 import { calculateLossAversion, calculateRiskAversion, extractGeneration, extractRole } from '../../lib/mathEngine';
 import { Loader2, Search, Eye } from 'lucide-react';
 
+interface ProcessedResponse {
+  id: string;
+  session_id: string;
+  date: string;
+  generation: string;
+  role: string;
+  riskTolerance: string;
+  lossAversion: string;
+}
+
 const Responses: React.FC = () => {
   const [loading, setLoading] = useState(true);
-  const [responsesData, setResponsesData] = useState<any[]>([]);
+  const [responsesData, setResponsesData] = useState<ProcessedResponse[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
@@ -15,7 +25,7 @@ const Responses: React.FC = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const { data: responses, error: respError } = await supabase.from('responses').select('*').order('submitted_at', { ascending: false });
+      const { data: responses, error: respError } = await supabase.from('responses').select('*').order('started_at', { ascending: false });
       const { data: answers, error: ansError } = await supabase.from('answers').select('*');
 
       if (respError) throw respError;
@@ -24,19 +34,24 @@ const Responses: React.FC = () => {
       const answersByResponse: Record<string, any> = {};
       answers?.forEach(a => {
         if (!answersByResponse[a.response_id]) answersByResponse[a.response_id] = {};
-        answersByResponse[a.response_id][a.question_id] = a.answer_value;
+        answersByResponse[a.response_id][a.question_id] = a.value;
       });
 
-      const processed = responses?.map(r => {
+      const processed: ProcessedResponse[] = responses?.map(r => {
         const rAnswers = answersByResponse[r.id] || {};
-        const gen = extractGeneration(rAnswers) || 'Millennials';
-        const role = extractRole(rAnswers) || 'Worker';
+        const gen = extractGeneration(rAnswers) || 'Unknown';
+        const role = extractRole(rAnswers) || 'Unknown';
         const risk = calculateRiskAversion(rAnswers);
         const loss = calculateLossAversion(rAnswers);
 
         return {
           id: r.id,
-          date: new Date(r.submitted_at).toLocaleDateString(),
+          session_id: r.session_id || r.id,
+          date: new Date(r.started_at).toLocaleDateString(undefined, {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+          }),
           generation: gen,
           role: role,
           riskTolerance: risk.toFixed(2),
@@ -53,7 +68,7 @@ const Responses: React.FC = () => {
   };
 
   const filteredResponses = responsesData.filter((row) => 
-    row.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    row.session_id.toLowerCase().includes(searchQuery.toLowerCase()) ||
     row.role.toLowerCase().includes(searchQuery.toLowerCase()) ||
     row.generation.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -110,8 +125,8 @@ const Responses: React.FC = () => {
             <tbody className="divide-y divide-slate-100">
               {filteredResponses.map((row) => (
                 <tr key={row.id} className="hover:bg-slate-50 transition-colors group">
-                  <td className="px-6 py-4 text-sm font-mono text-slate-500" title={row.id}>
-                    {row.id.substring(0, 8)}...
+                  <td className="px-6 py-4 text-sm font-mono text-slate-500" title={row.session_id}>
+                    {row.session_id.substring(0, 8)}...
                   </td>
                   <td className="px-6 py-4 text-sm text-slate-700 font-medium">{row.date}</td>
                   <td className="px-6 py-4 text-sm">

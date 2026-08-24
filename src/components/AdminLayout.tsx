@@ -20,7 +20,7 @@ const AdminLayout: React.FC = () => {
   };
 
   const navItems = [
-    { name: 'Overview', path: '/admin/overview', icon: LayoutDashboard },
+    { name: 'Overview', path: '/admin', icon: LayoutDashboard },
     { name: 'Survey Builder', path: '/admin/survey-builder', icon: FileText },
     { name: 'CPT Task Builder', path: '/admin/cpt-builder', icon: MousePointer2 },
     { name: 'Responses', path: '/admin/responses', icon: Users },
@@ -44,10 +44,11 @@ const AdminLayout: React.FC = () => {
               <NavLink
                 key={item.path}
                 to={item.path}
+                end={item.path === '/admin'}
                 className={({ isActive }) =>
                   `flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                     isActive
-                      ? 'bg-blue-600 text-white'
+                      ? 'bg-[#F4C542] text-slate-900'
                       : 'text-slate-300 hover:bg-slate-800 hover:text-white'
                   }`
                 }

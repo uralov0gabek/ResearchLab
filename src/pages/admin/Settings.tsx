@@ -19,7 +19,7 @@ const Settings: React.FC = () => {
   useEffect(() => {
     const fetchUserEmail = async () => {
       try {
-        const { data, error } = await supabase.auth.getUser();
+        const { data } = await supabase.auth.getUser();
         if (data?.user) {
           setAdminEmail(data.user.email || null);
         }

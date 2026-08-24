@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import PrivacyPolicy from './pages/PrivacyPolicy';
@@ -12,7 +12,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 // Admin Pages
 import AdminOverview from './pages/admin/AdminOverview';
 import SurveyBuilder from './pages/admin/SurveyBuilder';
-import CPTTaskBuilder from './pages/admin/CPTTaskBuilder';
+import CPTBuilder from './pages/admin/CPTBuilder';
 import Responses from './pages/admin/Responses';
 import Results from './pages/admin/Results';
 import Settings from './pages/admin/Settings';
@@ -61,10 +61,9 @@ const App: React.FC = () => {
               </ProtectedRoute>
             }
           >
-            <Route index element={<Navigate to="overview" replace />} />
-            <Route path="overview" element={<AdminOverview />} />
+            <Route index element={<AdminOverview />} />
             <Route path="survey-builder" element={<SurveyBuilder />} />
-            <Route path="cpt-builder" element={<CPTTaskBuilder />} />
+            <Route path="cpt-builder" element={<CPTBuilder />} />
             <Route path="responses" element={<Responses />} />
             <Route path="results" element={<Results />} />
             <Route path="settings" element={<Settings />} />

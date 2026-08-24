@@ -4,10 +4,20 @@ import { calculateLossAversion, calculateRiskAversion, extractGeneration, extrac
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 import { Loader2, Users, ClipboardList, CheckCircle } from 'lucide-react';
 
+interface ChartDataGen {
+  generation: string;
+  avgRiskTolerance: number;
+}
+
+interface ChartDataRole {
+  role: string;
+  avgLossAversion: number;
+}
+
 const AdminOverview: React.FC = () => {
   const [loading, setLoading] = useState(true);
-  const [genData, setGenData] = useState<any[]>([]);
-  const [roleData, setRoleData] = useState<any[]>([]);
+  const [genData, setGenData] = useState<ChartDataGen[]>([]);
+  const [roleData, setRoleData] = useState<ChartDataRole[]>([]);
   
   // Stat card states
   const [totalResponses, setTotalResponses] = useState(0);
@@ -23,23 +33,25 @@ const AdminOverview: React.FC = () => {
       setLoading(true);
       const { data: responses, error: respError } = await supabase.from('responses').select('*');
       const { data: answers, error: ansError } = await supabase.from('answers').select('*');
-      const { data: questions, error: qError } = await supabase.from('questions').select('id').eq('is_active', true);
+      const { data: modules, error: qError } = await supabase.from('survey_modules').select('id, questions(id)').eq('status', 'active');
 
       if (respError) throw respError;
       if (ansError) throw ansError;
+      if (qError) throw qError;
       
+      const numActiveQuestions = modules?.reduce((acc: number, m: any) => acc + (m.questions?.length || 0), 0) || 0;
+
       setTotalResponses(responses?.length || 0);
-      setActiveQuestions(questions?.length || 0);
+      setActiveQuestions(numActiveQuestions);
       
       // Process answers per response
       const answersByResponse: Record<string, any> = {};
       answers?.forEach(a => {
         if (!answersByResponse[a.response_id]) answersByResponse[a.response_id] = {};
-        answersByResponse[a.response_id][a.question_id] = a.answer_value;
+        answersByResponse[a.response_id][a.question_id] = a.value;
       });
 
       // Calculate true completion rate
-      const numActiveQuestions = questions?.length || 0;
       let completeCount = 0;
       responses?.forEach(r => {
         const rAnswers = answersByResponse[r.id] || {};
@@ -150,46 +162,58 @@ const AdminOverview: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 hover:shadow-md transition-shadow">
-          <h2 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
-            Average Risk Tolerance by Generation
-          </h2>
-          <div className="h-[350px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={genData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-                <XAxis dataKey="generation" axisLine={false} tickLine={false} tick={{ fill: '#64748B' }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748B' }} />
-                <Tooltip 
-                  cursor={{ fill: '#F8FAFC' }}
-                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                />
-                <Legend />
-                <Bar dataKey="avgRiskTolerance" name="Risk Tolerance (Alpha)" fill="#F4C542" radius={[6, 6, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+        {totalResponses === 0 ? (
+          <div className="xl:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200 p-12 flex flex-col items-center justify-center min-h-[300px]">
+             <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
+                <Users className="w-8 h-8 text-slate-300" />
+             </div>
+             <h3 className="text-xl font-semibold text-slate-700">No Data Yet</h3>
+             <p className="text-slate-500 mt-2">Charts will appear here once you receive some survey responses.</p>
           </div>
-        </div>
+        ) : (
+          <>
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 hover:shadow-md transition-shadow">
+              <h2 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+                Average Risk Tolerance by Generation
+              </h2>
+              <div className="h-[350px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={genData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                    <XAxis dataKey="generation" axisLine={false} tickLine={false} tick={{ fill: '#64748B' }} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748B' }} />
+                    <Tooltip 
+                      cursor={{ fill: '#F8FAFC' }}
+                      contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                    />
+                    <Legend />
+                    <Bar dataKey="avgRiskTolerance" name="Risk Tolerance (Alpha)" fill="#F4C542" radius={[6, 6, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 hover:shadow-md transition-shadow">
-          <h2 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
-            Loss Aversion by Role
-          </h2>
-          <div className="h-[350px] w-full flex justify-center">
-            <ResponsiveContainer width="100%" height="100%">
-              <RadarChart cx="50%" cy="50%" outerRadius="75%" data={roleData}>
-                <PolarGrid stroke="#E2E8F0" />
-                <PolarAngleAxis dataKey="role" tick={{ fill: '#0F172A', fontWeight: 600 }} />
-                <PolarRadiusAxis angle={30} domain={[0, 5]} tick={{ fill: '#64748B' }} />
-                <Radar name="Loss Aversion (Lambda)" dataKey="avgLossAversion" stroke="#0F172A" strokeWidth={2} fill="#0F172A" fillOpacity={0.7} />
-                <Tooltip 
-                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                />
-                <Legend />
-              </RadarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 hover:shadow-md transition-shadow">
+              <h2 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+                Loss Aversion by Role
+              </h2>
+              <div className="h-[350px] w-full flex justify-center">
+                <ResponsiveContainer width="100%" height="100%">
+                  <RadarChart cx="50%" cy="50%" outerRadius="75%" data={roleData}>
+                    <PolarGrid stroke="#E2E8F0" />
+                    <PolarAngleAxis dataKey="role" tick={{ fill: '#0F172A', fontWeight: 600 }} />
+                    <PolarRadiusAxis angle={30} domain={[0, 5]} tick={{ fill: '#64748B' }} />
+                    <Radar name="Loss Aversion (Lambda)" dataKey="avgLossAversion" stroke="#0F172A" strokeWidth={2} fill="#0F172A" fillOpacity={0.7} />
+                    <Tooltip 
+                      contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                    />
+                    <Legend />
+                  </RadarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
