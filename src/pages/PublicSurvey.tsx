@@ -261,8 +261,8 @@ const PublicSurvey: React.FC = () => {
     <div className="min-h-screen flex flex-col bg-[#FFFDF5] text-gray-800 font-sans">
       <Navbar />
       
-      <main className="flex-grow flex flex-col pt-24 pb-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-3xl w-full mx-auto flex-grow flex flex-col mt-8">
+      <main className="flex-grow flex flex-col pt-24 pb-12 px-2 sm:px-6 lg:px-8">
+        <div className="w-11/12 md:w-full max-w-3xl mx-auto flex-grow flex flex-col mt-8">
           
           {/* Progress Bar and Header */}
           <div className="mb-10">
@@ -273,7 +273,7 @@ const PublicSurvey: React.FC = () => {
               </div>
               <button 
                 onClick={handleExit}
-                className="text-gray-400 hover:text-red-500 transition-colors p-2 -mr-2 rounded-lg hover:bg-red-50"
+                className="text-gray-400 hover:text-red-500 transition-colors p-2 -mr-2 rounded-lg hover:bg-red-50 min-h-[44px] min-w-[44px] flex items-center justify-center"
                 title="Exit Survey"
               >
                 <X size={20} />

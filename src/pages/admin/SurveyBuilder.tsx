@@ -271,9 +271,9 @@ const SurveyBuilder: React.FC = () => {
   const activeModuleData = modules.find(m => m.id === activeModule);
 
   return (
-    <div className="flex w-full min-h-[calc(100vh-4rem)] bg-[#FFFDF5] text-slate-800 font-sans">
-      {/* Left Column (Sidebar - 1/4 width) */}
-      <div className="w-1/4 bg-[#FFFDF5] border-r border-gray-200 p-6 flex flex-col hidden md:flex">
+    <div className="flex flex-col md:flex-row w-full min-h-[calc(100vh-4rem)] bg-[#FFFDF5] text-slate-800 font-sans">
+      {/* Left Column (Sidebar) */}
+      <div className="w-full md:w-1/4 bg-[#FFFDF5] border-b md:border-b-0 md:border-r border-gray-200 p-6 flex flex-col">
         <h2 className="text-xl font-bold mb-6 text-slate-900">Survey Modules</h2>
         <div className="space-y-3">
           {isLoadingModules ? (
@@ -317,7 +317,7 @@ const SurveyBuilder: React.FC = () => {
       {/* Right Column (Main Area - 3/4 width) */}
       <div className="w-full md:w-3/4 p-4 md:p-8 overflow-y-auto">
         {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 max-w-4xl mx-auto">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 max-w-4xl mx-auto">
           <div>
             <h1 className="text-3xl font-bold text-slate-900 mb-1">Builder Canvas</h1>
             {activeModuleData ? (

@@ -31,7 +31,10 @@ const Home: React.FC = () => {
                 Take the Survey
                 <ArrowRight size={20} />
               </Link>
-              <button className="inline-flex justify-center items-center gap-2 px-8 py-4 rounded-xl bg-white border-2 border-gray-200 text-slate-900 font-semibold text-lg hover:border-slate-900 hover:bg-slate-50 transition-all">
+              <button 
+                onClick={() => document.getElementById('about')?.scrollIntoView({ behavior: 'smooth' })}
+                className="inline-flex justify-center items-center gap-2 px-8 py-4 rounded-xl bg-white border-2 border-gray-200 text-slate-900 font-semibold text-lg hover:border-slate-900 hover:bg-slate-50 transition-all"
+              >
                 Explore the Research
               </button>
             </div>

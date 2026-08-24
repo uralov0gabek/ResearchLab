@@ -12,7 +12,7 @@ export const Hero: React.FC = () => {
           <p className="text-xl sm:text-2xl text-brand-charcoal/80 mb-10 max-w-2xl mx-auto">
             Join our research study exploring how individuals navigate choices involving potential gains and losses. Your participation helps advance behavioral economics.
           </p>
-          <div className="flex flex-col sm:flex-row justify-center gap-4">
+          <div className="flex flex-col md:flex-row justify-center gap-4">
             <a 
               href="#participate" 
               className="inline-flex items-center justify-center px-8 py-4 text-lg font-bold rounded-full text-brand-charcoal bg-brand-gold hover:bg-brand-gold/90 transition-colors shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 duration-200"

@@ -24,7 +24,7 @@ const Login: React.FC = () => {
       setError(error.message);
       setLoading(false);
     } else if (data?.user) {
-      navigate('/admin/overview');
+      navigate('/admin');
     } else {
       setLoading(false);
     }

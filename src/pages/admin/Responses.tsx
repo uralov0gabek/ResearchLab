@@ -109,7 +109,7 @@ const Responses: React.FC = () => {
           <p className="text-slate-500 text-sm mt-1">Try adjusting your search criteria.</p>
         </div>
       ) : (
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto w-full">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200">

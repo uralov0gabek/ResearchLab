@@ -12,7 +12,7 @@ export const AdminLogin: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   if (user) {
-    return <Navigate to="/admin/dashboard" replace />;
+    return <Navigate to="/admin" replace />;
   }
 
   const handleLogin = async (e: React.FormEvent) => {

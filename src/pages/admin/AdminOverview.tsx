@@ -129,34 +129,34 @@ const AdminOverview: React.FC = () => {
     <div className="space-y-8 animate-in fade-in duration-500">
       
       {/* Stat Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex items-center gap-5 hover:shadow-md transition-shadow">
-          <div className="w-14 h-14 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex items-center gap-4 hover:shadow-md transition-shadow min-w-0">
+          <div className="w-14 h-14 rounded-full bg-blue-50 flex flex-shrink-0 items-center justify-center text-blue-600">
             <Users className="w-7 h-7" />
           </div>
-          <div>
-            <p className="text-sm font-medium text-slate-500">Total Responses</p>
-            <p className="text-3xl font-bold text-slate-800">{totalResponses}</p>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium text-slate-500 break-words">Total Responses</p>
+            <p className="text-2xl sm:text-3xl font-bold text-slate-800 break-words">{totalResponses}</p>
           </div>
         </div>
         
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex items-center gap-5 hover:shadow-md transition-shadow">
-          <div className="w-14 h-14 rounded-full bg-yellow-50 flex items-center justify-center text-[#F4C542]">
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex items-center gap-4 hover:shadow-md transition-shadow min-w-0">
+          <div className="w-14 h-14 rounded-full bg-yellow-50 flex flex-shrink-0 items-center justify-center text-[#F4C542]">
             <ClipboardList className="w-7 h-7" />
           </div>
-          <div>
-            <p className="text-sm font-medium text-slate-500">Active Questions</p>
-            <p className="text-3xl font-bold text-slate-800">{activeQuestions}</p>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium text-slate-500 break-words">Active Questions</p>
+            <p className="text-2xl sm:text-3xl font-bold text-slate-800 break-words">{activeQuestions}</p>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex items-center gap-5 hover:shadow-md transition-shadow">
-          <div className="w-14 h-14 rounded-full bg-green-50 flex items-center justify-center text-green-600">
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex items-center gap-4 hover:shadow-md transition-shadow min-w-0">
+          <div className="w-14 h-14 rounded-full bg-green-50 flex flex-shrink-0 items-center justify-center text-green-600">
             <CheckCircle className="w-7 h-7" />
           </div>
-          <div>
-            <p className="text-sm font-medium text-slate-500">Completion Rate</p>
-            <p className="text-3xl font-bold text-slate-800">{completionRate}%</p>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium text-slate-500 break-words">Completion Rate</p>
+            <p className="text-2xl sm:text-3xl font-bold text-slate-800 break-words">{completionRate}%</p>
           </div>
         </div>
       </div>
@@ -176,8 +176,8 @@ const AdminOverview: React.FC = () => {
               <h2 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
                 Average Risk Tolerance by Generation
               </h2>
-              <div className="h-[350px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
+              <div className="w-full">
+                <ResponsiveContainer width="100%" height={300}>
                   <BarChart data={genData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
                     <XAxis dataKey="generation" axisLine={false} tickLine={false} tick={{ fill: '#64748B' }} />
@@ -197,8 +197,8 @@ const AdminOverview: React.FC = () => {
               <h2 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
                 Loss Aversion by Role
               </h2>
-              <div className="h-[350px] w-full flex justify-center">
-                <ResponsiveContainer width="100%" height="100%">
+              <div className="w-full flex justify-center">
+                <ResponsiveContainer width="100%" height={300}>
                   <RadarChart cx="50%" cy="50%" outerRadius="75%" data={roleData}>
                     <PolarGrid stroke="#E2E8F0" />
                     <PolarAngleAxis dataKey="role" tick={{ fill: '#0F172A', fontWeight: 600 }} />
