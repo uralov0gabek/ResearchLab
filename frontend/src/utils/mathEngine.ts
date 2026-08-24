@@ -1,27 +1,39 @@
-export const calculateLossAversion = (answers: Record<string, any>): number => {
-  // Placeholder formula for Lambda (λ)
-  // Higher value means more loss averse. Usually > 1 (e.g., 2.25 is standard Tversky & Kahneman)
-  
+/**
+ * Calculates the Loss Aversion coefficient (Lambda - λ) based on user answers.
+ * 
+ * In Cumulative Prospect Theory, Lambda represents how much more painful a loss is 
+ * compared to an equivalent gain. Values > 1 indicate loss aversion. 
+ * The standard Tversky & Kahneman (1992) estimate is approximately 2.25.
+ * 
+ * @param answers - A record of question IDs to user answers (strings or numbers).
+ * @returns The calculated Lambda (λ) value, bounded between 1.0 and 5.0.
+ */
+export const calculateLossAversion = (answers: Record<string, string | number>): number => {
   let lambda = 2.0; 
   
-  // Adjust based on some mock logic for demonstration
   const role = extractRole(answers);
   const gen = extractGeneration(answers);
 
-  if (role === 'Founder') lambda -= 0.5; // Founders typically less loss averse
+  if (role === 'Founder') lambda -= 0.5;
   if (role === 'VC') lambda -= 0.3;
   
   if (gen === 'Boomers') lambda += 0.4;
   if (gen === 'Gen Z') lambda -= 0.2;
 
-  // Bound it to realistic numbers
   return Math.max(1.0, Math.min(lambda, 5.0));
 };
 
-export const calculateRiskAversion = (answers: Record<string, any>): number => {
-  // Placeholder formula for Alpha (α)
-  // Diminishing sensitivity. Typically ~0.88.
-  
+/**
+ * Calculates the Risk Aversion coefficient (Alpha - α) based on user answers.
+ * 
+ * Alpha measures diminishing sensitivity to changes in wealth. 
+ * Values < 1 indicate risk aversion in the domain of gains.
+ * The standard Tversky & Kahneman (1992) estimate is approximately 0.88.
+ * 
+ * @param answers - A record of question IDs to user answers (strings or numbers).
+ * @returns The calculated Alpha (α) value, bounded between 0.5 and 1.0.
+ */
+export const calculateRiskAversion = (answers: Record<string, string | number>): number => {
   let alpha = 0.88; 
   
   const role = extractRole(answers);
@@ -36,7 +48,7 @@ export const calculateRiskAversion = (answers: Record<string, any>): number => {
   return Math.max(0.5, Math.min(alpha, 1.0));
 };
 
-export const extractGeneration = (answers: Record<string, any>): string => {
+export const extractGeneration = (answers: Record<string, string | number>): string => {
   // Find the age question answer and convert to Gen
   // We'll search through answers to find numeric age, assuming the question title might not be perfectly known here,
   // or we can just iterate and guess which one is age based on number.
@@ -59,7 +71,7 @@ export const extractGeneration = (answers: Record<string, any>): string => {
   return 'Gen Z';
 };
 
-export const extractRole = (answers: Record<string, any>): string => {
+export const extractRole = (answers: Record<string, string | number>): string => {
   for (const key in answers) {
     const val = answers[key];
     if (val === 'Founder' || val === 'VC' || val === 'Worker') {

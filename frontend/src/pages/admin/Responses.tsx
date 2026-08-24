@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { supabase } from '../../lib/supabase';
-import { calculateLossAversion, calculateRiskAversion, extractGeneration, extractRole } from '../../lib/mathEngine';
+import { apiFetch } from '../../services/api/apiClient';
 import { Loader2, Search, Eye } from 'lucide-react';
 
 interface ProcessedResponse {
@@ -18,54 +17,24 @@ const Responses: React.FC = () => {
   const [responsesData, setResponsesData] = useState<ProcessedResponse[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
   const fetchData = async () => {
     try {
       setLoading(true);
-      const { data: responses, error: respError } = await supabase.from('responses').select('*').order('started_at', { ascending: false });
-      const { data: answers, error: ansError } = await supabase.from('answers').select('*');
-
-      if (respError) throw respError;
-      if (ansError) throw ansError;
-
-      const answersByResponse: Record<string, any> = {};
-      answers?.forEach(a => {
-        if (!answersByResponse[a.response_id]) answersByResponse[a.response_id] = {};
-        answersByResponse[a.response_id][a.question_id] = a.value;
-      });
-
-      const processed: ProcessedResponse[] = responses?.map(r => {
-        const rAnswers = answersByResponse[r.id] || {};
-        const gen = extractGeneration(rAnswers) || 'Unknown';
-        const role = extractRole(rAnswers) || 'Unknown';
-        const risk = calculateRiskAversion(rAnswers);
-        const loss = calculateLossAversion(rAnswers);
-
-        return {
-          id: r.id,
-          session_id: r.session_id || r.id,
-          date: new Date(r.started_at).toLocaleDateString(undefined, {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric'
-          }),
-          generation: gen,
-          role: role,
-          riskTolerance: risk.toFixed(2),
-          lossAversion: loss.toFixed(2)
-        };
-      }) || [];
-
-      setResponsesData(processed);
+      const data = await apiFetch('/responses');
+      setResponsesData(data.responses || []);
     } catch (err) {
       console.error('Error fetching responses data:', err);
+      setResponsesData([]);
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+
 
   const filteredResponses = responsesData.filter((row) => 
     row.session_id.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -125,8 +94,8 @@ const Responses: React.FC = () => {
             <tbody className="divide-y divide-slate-100">
               {filteredResponses.map((row) => (
                 <tr key={row.id} className="hover:bg-slate-50 transition-colors group">
-                  <td className="px-6 py-4 text-sm font-mono text-slate-500" title={row.session_id}>
-                    {row.session_id.substring(0, 8)}...
+                  <td className="px-6 py-4 text-sm font-mono text-slate-500 max-w-[120px] truncate" title={row.session_id}>
+                    {row.session_id}
                   </td>
                   <td className="px-6 py-4 text-sm text-slate-700 font-medium">{row.date}</td>
                   <td className="px-6 py-4 text-sm">
@@ -142,7 +111,7 @@ const Responses: React.FC = () => {
                   <td className="px-6 py-4 text-sm text-slate-700">{row.riskTolerance}</td>
                   <td className="px-6 py-4 text-sm text-slate-700">{row.lossAversion}</td>
                   <td className="px-6 py-4 text-sm text-right">
-                    <button className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors inline-flex items-center gap-1.5" title="View Details">
+                    <button aria-label="View Details" className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors inline-flex items-center gap-1.5" title="View Details">
                       <Eye className="w-4 h-4" />
                       <span className="sr-only md:not-sr-only md:text-xs md:font-medium">View</span>
                     </button>

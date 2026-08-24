@@ -40,10 +40,10 @@ const Contact: React.FC = () => {
                 <div className="p-3 bg-[#F4C542]/20 text-[#e3b632] rounded-xl shrink-0">
                   <Mail size={24} />
                 </div>
-                <div>
-                  <h3 className="font-bold text-slate-900 mb-1">Email</h3>
-                  <a href="mailto:research@uzcombinator.com" className="text-gray-600 hover:text-slate-900 transition-colors">
-                    research@uzcombinator.com
+                <div className="flex flex-col">
+                  <span className="font-semibold text-slate-900">Email Us</span>
+                  <a href="mailto:research@researchlab.com" className="text-gray-600 hover:text-slate-900 transition-colors">
+                    research@researchlab.com
                   </a>
                 </div>
               </div>

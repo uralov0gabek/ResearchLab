@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 import { Shield, Key, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 
 const Settings: React.FC = () => {
@@ -60,9 +60,9 @@ const Settings: React.FC = () => {
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error updating password:', err);
-      setError(err.message || 'Failed to update password');
+      setError(err instanceof Error ? err.message : 'Failed to update password');
     } finally {
       setLoading(false);
     }
@@ -94,7 +94,7 @@ const Settings: React.FC = () => {
             <div>
               <h3 className="text-lg font-semibold text-slate-800">Primary Administrator</h3>
               <p className="text-slate-500">
-                {emailLoading ? 'Loading email...' : (adminEmail || user?.email || 'admin@uzcombinator.com')}
+                {emailLoading ? 'Loading email...' : (adminEmail || user?.email || 'admin@researchlab.com')}
               </p>
               <span className="inline-block mt-2 px-3 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full border border-green-200">
                 Active Session

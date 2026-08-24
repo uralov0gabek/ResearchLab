@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Plus, Trash2, Copy, ArrowUp, ArrowDown, Save, AlignLeft, List, Hash, LayoutGrid, CheckSquare, Loader2
 } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
+import { apiFetch } from '../../services/api/apiClient';
 
 type QuestionType = 'single_choice' | 'multiple_choice' | 'short_text' | 'number_input' | 'cpt_task';
 
@@ -30,31 +30,14 @@ const SurveyBuilder: React.FC = () => {
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  useEffect(() => {
-    fetchModules();
-  }, []);
-
-  useEffect(() => {
-    if (activeModule) {
-      fetchQuestions(activeModule);
-    } else {
-      setQuestions([]);
-    }
-  }, [activeModule]);
-
   const fetchModules = async () => {
     setIsLoadingModules(true);
     try {
-      const { data, error } = await supabase
-        .from('survey_modules')
-        .select('*, questions(count)')
-        .order('created_at', { ascending: true });
+      const data = await apiFetch('/modules');
       
-      if (error) throw error;
-      
-      const formattedModules = data?.map((m: any) => ({
+      const formattedModules = data?.map((m: Record<string, unknown>) => ({
         ...m,
-        question_count: m.questions?.[0]?.count || 0
+        question_count: (m.questions as { count: number }[])?.[0]?.count || 0
       })) || [];
       
       setModules(formattedModules);
@@ -73,20 +56,15 @@ const SurveyBuilder: React.FC = () => {
   const fetchQuestions = async (moduleId: string) => {
     try {
       setIsLoadingQuestions(true);
-      const { data, error } = await supabase
-        .from('questions')
-        .select('*')
-        .eq('module_id', moduleId)
-        .order('order_index', { ascending: true });
+      const data = await apiFetch(`/questions?module_id=${moduleId}`);
       
-      if (error) throw error;
       if (data) {
-        setQuestions(data.map((row: any) => ({
-          id: row.id,
-          type: row.type,
-          title: row.text,
-          options: row.options || [],
-          required: row.required
+        setQuestions(data.map((row: Record<string, unknown>) => ({
+          id: String(row.id),
+          type: String(row.type) as 'single_choice' | 'multiple_choice' | 'short_text' | 'number_input',
+          title: String(row.text || ''),
+          options: (row.options as string[]) || [],
+          required: Boolean(row.required)
         })));
       }
     } catch (err) {
@@ -97,17 +75,26 @@ const SurveyBuilder: React.FC = () => {
     }
   };
 
+  useEffect(() => {
+    fetchModules();
+  }, []);
+
+  useEffect(() => {
+    if (activeModule) {
+      fetchQuestions(activeModule);
+    } else {
+      setQuestions([]);
+    }
+  }, [activeModule]);
+
+
+
   const handleDeleteModule = async (e: React.MouseEvent, moduleId: string) => {
     e.stopPropagation();
     
     if (window.confirm('Are you sure you want to delete this module? All questions inside it will also be deleted.')) {
       try {
-        const { error } = await supabase
-          .from('survey_modules')
-          .delete()
-          .eq('id', moduleId);
-          
-        if (error) throw error;
+        await apiFetch(`/modules/${moduleId}`, { method: 'DELETE' });
         
         if (activeModule === moduleId) {
           setActiveModule(null);
@@ -125,13 +112,10 @@ const SurveyBuilder: React.FC = () => {
     const title = prompt("Enter new module title:");
     if (!title) return;
     try {
-      const { data, error } = await supabase
-        .from('survey_modules')
-        .insert([{ title, status: 'draft' }])
-        .select()
-        .single();
-        
-      if (error) throw error;
+      const data = await apiFetch('/modules', {
+        method: 'POST',
+        body: JSON.stringify({ title, status: 'draft' })
+      });
       
       await fetchModules();
       
@@ -231,32 +215,19 @@ const SurveyBuilder: React.FC = () => {
         required: q.required
       }));
 
-      if (questionsToUpsert.length > 0) {
-        const { error: upsertError } = await supabase
-          .from('questions')
-          .upsert(questionsToUpsert);
-
-        if (upsertError) throw upsertError;
-      }
-
-      const { data: dbQuestions, error: fetchError } = await supabase
-        .from('questions')
-        .select('id')
-        .eq('module_id', activeModule);
-        
-      if (fetchError) throw fetchError;
-
+      // Also, we need the old IDs from the backend. Instead of fetching DB, we'll just send the current IDs 
+      // but wait, to delete old ones, we can just send the current ones and let backend handle it, or send all current IDs 
+      // Actually, my backend code takes `idsToDelete` explicitly, so we must fetch old IDs or change backend logic.
+      // Easiest is to fetch existing questions first:
+      const dbQuestions = await apiFetch(`/questions?module_id=${activeModule}`);
+      
       const currentIds = new Set(questions.map(q => q.id));
-      const idsToDelete = dbQuestions?.filter(q => !currentIds.has(q.id)).map(q => q.id) || [];
+      const idsToDelete = dbQuestions?.filter((q: { id: string }) => !currentIds.has(q.id)).map((q: { id: string }) => q.id) || [];
 
-      if (idsToDelete.length > 0) {
-        const { error: deleteError } = await supabase
-          .from('questions')
-          .delete()
-          .in('id', idsToDelete);
-        
-        if (deleteError) throw deleteError;
-      }
+      await apiFetch('/questions', {
+        method: 'POST',
+        body: JSON.stringify({ questionsToUpsert, idsToDelete })
+      });
 
       alert('Saved successfully!');
       fetchModules(); // Refresh modules to update question counts
@@ -299,6 +270,7 @@ const SurveyBuilder: React.FC = () => {
                   onClick={(e) => handleDeleteModule(e, mod.id)}
                   className="text-gray-300 hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity rounded-md hover:bg-red-50"
                   title="Delete Module"
+                  aria-label="Delete Module"
                 >
                   <Trash2 size={16} />
                 </button>
@@ -381,6 +353,7 @@ const SurveyBuilder: React.FC = () => {
                     disabled={index === 0}
                     className="p-1.5 text-gray-400 hover:text-slate-700 hover:bg-slate-100 rounded-md transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
                     title="Move Up"
+                    aria-label="Move Up"
                   >
                     <ArrowUp size={16} />
                   </button>
@@ -389,6 +362,7 @@ const SurveyBuilder: React.FC = () => {
                     disabled={index === questions.length - 1}
                     className="p-1.5 text-gray-400 hover:text-slate-700 hover:bg-slate-100 rounded-md transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
                     title="Move Down"
+                    aria-label="Move Down"
                   >
                     <ArrowDown size={16} />
                   </button>
@@ -397,6 +371,7 @@ const SurveyBuilder: React.FC = () => {
                     onClick={() => duplicateQuestion(index)}
                     className="p-1.5 text-gray-400 hover:text-slate-700 hover:bg-slate-100 rounded-md transition-colors"
                     title="Duplicate"
+                    aria-label="Duplicate Question"
                   >
                     <Copy size={16} />
                   </button>
@@ -404,6 +379,7 @@ const SurveyBuilder: React.FC = () => {
                     onClick={() => removeQuestion(q.id)}
                     className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
                     title="Delete"
+                    aria-label="Delete Question"
                   >
                     <Trash2 size={16} />
                   </button>
@@ -465,6 +441,7 @@ const SurveyBuilder: React.FC = () => {
                             className="text-gray-300 hover:text-red-400 p-1 opacity-0 group-hover/opt:opacity-100 transition-opacity"
                             disabled={q.options.length <= 1}
                             title="Remove option"
+                            aria-label="Remove option"
                           >
                             <Trash2 size={16} />
                           </button>

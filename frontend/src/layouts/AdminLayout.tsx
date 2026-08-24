@@ -12,7 +12,7 @@ import {
   Menu,
   X
 } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../context/AuthContext';
 
 const NAV_LINKS = [
   { name: 'Overview', path: '/admin/overview', icon: LayoutDashboard },
@@ -84,7 +84,7 @@ export const AdminLayout: React.FC = () => {
               {user?.email?.charAt(0).toUpperCase() || 'A'}
             </div>
             <div className="text-sm truncate text-slate-300 flex-1">
-              {user?.email || 'admin@uzcombinator.com'}
+              {user?.email || 'admin@researchlab.com'}
             </div>
           </div>
           <button

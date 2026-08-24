@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { supabase } from '../../lib/supabase';
-import { calculateLossAversion, calculateRiskAversion, extractGeneration, extractRole } from '../../lib/mathEngine';
+import { apiFetch } from '../../services/api/apiClient';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 import { Loader2, Users, ClipboardList, CheckCircle } from 'lucide-react';
 
@@ -24,97 +23,35 @@ const AdminOverview: React.FC = () => {
   const [activeQuestions, setActiveQuestions] = useState(0);
   const [completionRate, setCompletionRate] = useState(100);
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
   const fetchData = async () => {
     try {
       setLoading(true);
-      const { data: responses, error: respError } = await supabase.from('responses').select('*');
-      const { data: answers, error: ansError } = await supabase.from('answers').select('*');
-      const { data: modules, error: qError } = await supabase.from('survey_modules').select('id, questions(id)').eq('status', 'active');
-
-      if (respError) throw respError;
-      if (ansError) throw ansError;
-      if (qError) throw qError;
+      const data = await apiFetch('/stats');
       
-      const numActiveQuestions = modules?.reduce((acc: number, m: any) => acc + (m.questions?.length || 0), 0) || 0;
-
-      setTotalResponses(responses?.length || 0);
-      setActiveQuestions(numActiveQuestions);
+      setTotalResponses(data.totalResponses || 0);
+      setActiveQuestions(data.activeQuestions || 0);
+      setCompletionRate(data.completionRate || 0);
+      setGenData(data.genData || []);
+      setRoleData(data.roleData || []);
       
-      // Process answers per response
-      const answersByResponse: Record<string, any> = {};
-      answers?.forEach(a => {
-        if (!answersByResponse[a.response_id]) answersByResponse[a.response_id] = {};
-        answersByResponse[a.response_id][a.question_id] = a.value;
-      });
-
-      // Calculate true completion rate
-      let completeCount = 0;
-      responses?.forEach(r => {
-        const rAnswers = answersByResponse[r.id] || {};
-        if (numActiveQuestions > 0 && Object.keys(rAnswers).length >= numActiveQuestions) {
-          completeCount++;
-        }
-      });
-      const calcRate = responses?.length && numActiveQuestions > 0 
-        ? Math.round((completeCount / responses.length) * 100) 
-        : (responses?.length ? 100 : 0);
-      setCompletionRate(calcRate);
-
-      // Aggregate data
-      const genAgg: Record<string, { totalRisk: number, count: number }> = {
-        'Boomers': { totalRisk: 0, count: 0 },
-        'Gen X': { totalRisk: 0, count: 0 },
-        'Millennials': { totalRisk: 0, count: 0 },
-        'Gen Z': { totalRisk: 0, count: 0 }
-      };
-
-      const roleAgg: Record<string, { totalLossAversion: number, count: number }> = {
-        'Founder': { totalLossAversion: 0, count: 0 },
-        'VC': { totalLossAversion: 0, count: 0 },
-        'Worker': { totalLossAversion: 0, count: 0 }
-      };
-
-      responses?.forEach(r => {
-        const rAnswers = answersByResponse[r.id] || {};
-        const gen = extractGeneration(rAnswers) || 'Millennials';
-        const role = extractRole(rAnswers) || 'Worker';
-        
-        const risk = calculateRiskAversion(rAnswers);
-        const lossAversion = calculateLossAversion(rAnswers);
-
-        if (genAgg[gen]) {
-          genAgg[gen].totalRisk += risk;
-          genAgg[gen].count += 1;
-        }
-
-        if (roleAgg[role]) {
-          roleAgg[role].totalLossAversion += lossAversion;
-          roleAgg[role].count += 1;
-        }
-      });
-
-      const processedGenData = Object.keys(genAgg).map(gen => ({
-        generation: gen,
-        avgRiskTolerance: genAgg[gen].count > 0 ? Number((genAgg[gen].totalRisk / genAgg[gen].count).toFixed(2)) : 0
-      }));
-
-      const processedRoleData = Object.keys(roleAgg).map(role => ({
-        role: role,
-        avgLossAversion: roleAgg[role].count > 0 ? Number((roleAgg[role].totalLossAversion / roleAgg[role].count).toFixed(2)) : 0
-      }));
-
-      setGenData(processedGenData);
-      setRoleData(processedRoleData);
     } catch (err) {
       console.error('Error fetching admin data', err);
+      // Fallback empty states
+      setTotalResponses(0);
+      setActiveQuestions(0);
+      setCompletionRate(0);
+      setGenData([]);
+      setRoleData([]);
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+
 
   if (loading) {
     return (

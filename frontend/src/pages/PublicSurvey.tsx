@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, ArrowLeft, CheckCircle, X, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { supabase } from '../lib/supabase';
+import { apiFetch } from '../services/api/apiClient';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import CPTQuestionCard from '../components/CPTQuestionCard';
@@ -35,7 +35,7 @@ const STORAGE_KEY = 'survey_session_data';
 const PublicSurvey: React.FC = () => {
   const [sessionId, setSessionId] = useState<string>('');
   const [currentStep, setCurrentStep] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, any>>({});
+  const [answers, setAnswers] = useState<Record<string, string | number | string[]>>({});
   const [questions, setQuestions] = useState<Question[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
@@ -49,20 +49,38 @@ const PublicSurvey: React.FC = () => {
     const fetchQuestions = async () => {
       try {
         setIsLoading(true);
-        const { data, error } = await supabase
-          .from('questions')
-          .select('*')
-          .order('created_at', { ascending: true });
+        const [questionsData, cptTasksData] = await Promise.all([
+          apiFetch('/questions').catch(() => []),
+          apiFetch('/cpt-tasks').catch(() => [])
+        ]);
         
-        if (error) throw error;
-        if (data) {
-          // Map DB 'title' to UI 'text' if needed, assuming the DB schema uses 'title' based on SurveyBuilder
-          const mappedData = data.map(q => ({
-            ...q,
-            text: q.title || q.text || ''
-          }));
-          setQuestions(mappedData as Question[]);
+        let allQuestions: Question[] = [];
+
+        if (Array.isArray(questionsData)) {
+          const mappedData = questionsData.map((q: Record<string, unknown>) => ({
+            ...(q as any),
+            text: String(q.title || q.text || '')
+          })) as Question[];
+          allQuestions = [...allQuestions, ...mappedData];
         }
+
+        if (Array.isArray(cptTasksData)) {
+          const mappedCpt = cptTasksData.map((task: Record<string, unknown>) => ({
+            id: `cpt_${task.id}`,
+            type: 'cpt_task' as QuestionType,
+            text: String(task.title),
+            cptData: {
+              sureAmount: Number(task.sure_amount),
+              gambleAmount1: Number(task.gamble_a_amount),
+              prob1: Number(task.gamble_a_prob),
+              gambleAmount2: Number(task.gamble_b_amount),
+              prob2: Number(task.gamble_b_prob),
+            }
+          }));
+          allQuestions = [...allQuestions, ...mappedCpt];
+        }
+
+        setQuestions(allQuestions);
       } catch (err) {
         console.error('Error fetching questions:', err);
       } finally {
@@ -119,7 +137,7 @@ const PublicSurvey: React.FC = () => {
     }
   }, [visibleQuestions, currentStep]);
 
-  const handleAnswerChange = (questionId: string, value: any) => {
+  const handleAnswerChange = (questionId: string, value: string | number | string[]) => {
     setAnswers(prev => ({ ...prev, [questionId]: value }));
   };
 
@@ -139,35 +157,17 @@ const PublicSurvey: React.FC = () => {
     setIsSubmitting(true);
     setSubmitError(null);
     try {
-      // 1. Insert into responses table
-      const { error: responseError } = await supabase
-        .from('responses')
-        .insert({
-          id: sessionId,
-          submitted_at: new Date().toISOString()
-        });
-
-      if (responseError) throw responseError;
-
-      // 2. Insert into answers table
-      const answersData = Object.entries(answers).map(([question_id, answer_value]) => ({
-        response_id: sessionId,
-        question_id,
-        answer_value
-      }));
-
-      const { error: answersError } = await supabase
-        .from('answers')
-        .insert(answersData);
-
-      if (answersError) throw answersError;
+      await apiFetch('/responses', {
+        method: 'POST',
+        body: JSON.stringify({ sessionId, answers })
+      });
 
       // Success
       sessionStorage.removeItem(STORAGE_KEY);
       setIsSubmitted(true);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Submit error:', err);
-      setSubmitError(err.message || 'Failed to submit survey. Please try again.');
+      setSubmitError(err instanceof Error ? err.message : 'Failed to submit survey. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -185,7 +185,7 @@ const PublicSurvey: React.FC = () => {
   } else if (question?.type === 'number_input') {
     isCurrentAnswerValid = typeof answer === 'string' && answer.trim().length > 0;
     if (isCurrentAnswerValid) {
-      const age = parseInt(answer, 10);
+      const age = parseInt(String(answer), 10);
       if (isNaN(age) || age < 18 || age > 120) {
         isCurrentAnswerValid = false;
         validationError = 'Please enter a valid age between 18 and 120.';
@@ -338,7 +338,7 @@ const PublicSurvey: React.FC = () => {
                   {question.type === 'cpt_task' && question.cptData && (
                     <CPTQuestionCard
                       cptData={question.cptData}
-                      selectedValue={answers[question.id]}
+                      selectedValue={answers[question.id] as 'A' | 'B' | undefined}
                       onSelect={(choice) => handleAnswerChange(question.id, choice)}
                     />
                   )}
@@ -383,7 +383,8 @@ const PublicSurvey: React.FC = () => {
                   {question.type === 'multiple_choice' && question.options && (
                     <div className="space-y-3">
                       {question.options.map((option, idx) => {
-                        const isChecked = (answers[question.id] || []).includes(option);
+                        const currentAnswers = (answers[question.id] as string[]) || [];
+                        const isChecked = currentAnswers.includes(option);
                         return (
                           <label 
                             key={idx} 
@@ -408,7 +409,7 @@ const PublicSurvey: React.FC = () => {
                               className="hidden"
                               checked={isChecked}
                               onChange={(e) => {
-                                const currentAnswers = answers[question.id] || [];
+                                const currentAnswers = (answers[question.id] as string[]) || [];
                                 if (e.target.checked) {
                                   handleAnswerChange(question.id, [...currentAnswers, option]);
                                 } else {

@@ -1,0 +1,247 @@
+import React, { useState, useEffect } from 'react';
+import { Settings, MousePointer2, Loader2, List } from 'lucide-react';
+import { apiFetch } from '../../services/api/apiClient';
+
+interface CPTTask {
+  id: string;
+  title: string;
+  sure_amount: number;
+  gamble_a_amount: number;
+  gamble_a_prob: number;
+  gamble_b_amount: number;
+  gamble_b_prob: number;
+  created_at: string;
+}
+
+const CPTBuilder: React.FC = () => {
+  const [isConfiguring, setIsConfiguring] = useState(false);
+  const [tasks, setTasks] = useState<CPTTask[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  
+  const [formData, setFormData] = useState({
+    title: '',
+    sure_amount: 50,
+    gamble_a_amount: 100,
+    gamble_a_prob: 50,
+    gamble_b_amount: 0,
+    gamble_b_prob: 50
+  });
+
+  const fetchTasks = async () => {
+    setIsLoading(true);
+    try {
+      const data = await apiFetch('/cpt-tasks');
+      setTasks(data || []);
+    } catch (error) {
+      console.error('Error fetching CPT tasks:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTasks();
+  }, []);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value, type } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'number' ? Number(value) : value
+    }));
+  };
+
+  const handleSave = async () => {
+    if (!formData.title) {
+      alert('Please enter a Task Name');
+      return;
+    }
+    setIsSaving(true);
+    try {
+      await apiFetch('/cpt-tasks', {
+        method: 'POST',
+        body: JSON.stringify(formData)
+      });
+      setIsConfiguring(false);
+      setFormData({
+        title: '',
+        sure_amount: 50,
+        gamble_a_amount: 100,
+        gamble_a_prob: 50,
+        gamble_b_amount: 0,
+        gamble_b_prob: 50
+      });
+      fetchTasks();
+    } catch (error) {
+      console.error('Error saving CPT task:', error);
+      alert('Failed to save CPT task.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold text-slate-900 tracking-tight">CPT Task Builder</h1>
+      </div>
+
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        {!isConfiguring ? (
+          <div className="p-12 flex flex-col items-center justify-center text-center border-b border-slate-100">
+            <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mb-6">
+              <MousePointer2 className="w-10 h-10 text-blue-500" />
+            </div>
+            <h2 className="text-xl font-semibold text-slate-900 mb-3">CPT Task Configuration</h2>
+            <p className="text-slate-500 max-w-md">
+              Create and manage Cumulative Prospect Theory (CPT) tasks. Configure the sure amounts and gambles.
+            </p>
+            <button 
+              onClick={() => setIsConfiguring(true)}
+              className="mt-8 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors flex items-center gap-2"
+            >
+              <Settings className="w-4 h-4" />
+              Create New Task
+            </button>
+          </div>
+        ) : (
+          <div className="p-8 border-b border-slate-100">
+            <h2 className="text-xl font-semibold text-slate-900 mb-6">Task Configuration</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-slate-700 mb-1">Task Name</label>
+                <input 
+                  type="text" 
+                  name="title"
+                  value={formData.title}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow" 
+                  placeholder="e.g. Risk Tolerance Task" 
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Sure Amount ($)</label>
+                <input 
+                  type="number" 
+                  name="sure_amount"
+                  value={formData.sure_amount}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow" 
+                />
+              </div>
+              <div className="hidden md:block"></div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Gamble Amount A ($)</label>
+                <input 
+                  type="number" 
+                  name="gamble_a_amount"
+                  value={formData.gamble_a_amount}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow" 
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Probability A (%)</label>
+                <input 
+                  type="number" 
+                  name="gamble_a_prob"
+                  value={formData.gamble_a_prob}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow" 
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Gamble Amount B ($)</label>
+                <input 
+                  type="number" 
+                  name="gamble_b_amount"
+                  value={formData.gamble_b_amount}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow" 
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Probability B (%)</label>
+                <input 
+                  type="number" 
+                  name="gamble_b_prob"
+                  value={formData.gamble_b_prob}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow" 
+                />
+              </div>
+            </div>
+            <div className="mt-8 flex justify-end gap-3">
+              <button 
+                onClick={() => setIsConfiguring(false)}
+                className="px-5 py-2.5 text-slate-600 bg-white border border-slate-300 hover:bg-slate-50 font-medium rounded-lg transition-colors"
+                disabled={isSaving}
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleSave}
+                disabled={isSaving}
+                className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors flex items-center gap-2"
+              >
+                {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}
+                Save Configuration
+              </button>
+            </div>
+          </div>
+        )}
+
+        <div className="p-8 bg-slate-50">
+          <div className="flex items-center gap-2 mb-6">
+            <List className="w-5 h-5 text-slate-500" />
+            <h2 className="text-lg font-semibold text-slate-900">Saved CPT Tasks</h2>
+          </div>
+          
+          {isLoading ? (
+            <div className="flex justify-center p-8">
+              <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+            </div>
+          ) : tasks.length === 0 ? (
+            <div className="text-center p-8 text-slate-500 bg-white rounded-xl border border-slate-200">
+              No tasks saved yet.
+            </div>
+          ) : (
+            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+              <table className="w-full text-left text-sm text-slate-600">
+                <thead className="bg-slate-50 border-b border-slate-200 text-slate-700">
+                  <tr>
+                    <th className="px-6 py-4 font-semibold">Title</th>
+                    <th className="px-6 py-4 font-semibold">Sure Amount</th>
+                    <th className="px-6 py-4 font-semibold">Gamble A</th>
+                    <th className="px-6 py-4 font-semibold">Gamble B</th>
+                    <th className="px-6 py-4 font-semibold">Created</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {tasks.map((task) => (
+                    <tr key={task.id} className="hover:bg-slate-50 transition-colors">
+                      <td className="px-6 py-4 font-medium text-slate-900">{task.title}</td>
+                      <td className="px-6 py-4">${task.sure_amount}</td>
+                      <td className="px-6 py-4">
+                        ${task.gamble_a_amount} ({task.gamble_a_prob}%)
+                      </td>
+                      <td className="px-6 py-4">
+                        ${task.gamble_b_amount} ({task.gamble_b_prob}%)
+                      </td>
+                      <td className="px-6 py-4 text-slate-400">
+                        {new Date(task.created_at).toLocaleDateString()}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default CPTBuilder;
