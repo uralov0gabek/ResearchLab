@@ -7,21 +7,21 @@ const apiRoutes = require('./routes/index');
 const { errorHandler } = require('./middlewares/errorHandler');
 
 const app = express();
+
+app.use(cors({
+  origin: function (origin, callback) {
+    // Allow all origins for now to eliminate CORS blocks
+    callback(null, true);
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept']
+}));
+
 const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(helmet());
-const corsOptions = {
-  origin: [
-    'http://localhost:5173', 
-    'http://localhost:3000',
-    'https://research-lab-v.vercel.app', // The new active frontend URL
-    'https://research-lab-drab.vercel.app' // Keeping the old one just in case
-  ],
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
-};
-app.use(cors(corsOptions));
 app.use(express.json());
 
 // Routes
