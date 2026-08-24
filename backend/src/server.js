@@ -12,7 +12,12 @@ const PORT = process.env.PORT || 5000;
 // Middleware
 app.use(helmet());
 const corsOptions = {
-  origin: ['http://localhost:5173', 'https://research-lab-v.vercel.app/'],
+  origin: [
+    'http://localhost:5173', 
+    'http://localhost:3000',
+    'https://research-lab-v.vercel.app', // The new active frontend URL
+    'https://research-lab-drab.vercel.app' // Keeping the old one just in case
+  ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
 };
