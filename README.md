@@ -1,4 +1,4 @@
-# UzCombinator Research Lab
+# Research Lab
 
 A full-stack, responsive research platform studying Generational Loss Aversion, Startup Founders, and Venture Capital in Uzbekistan.
 

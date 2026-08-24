@@ -20,7 +20,7 @@ const PrivacyPolicy: React.FC = () => {
             <h1 className="text-4xl font-extrabold text-slate-900 mb-8">Privacy Policy</h1>
             
             <p className="text-lg text-gray-600 mb-6 leading-relaxed">
-              At UzCombinator Research Lab, we are committed to protecting your privacy and ensuring the confidentiality of the information you provide during our research studies. This Privacy Policy outlines how we collect, use, and protect your data.
+              At Research Lab, we are committed to protecting your privacy and ensuring the confidentiality of the information you provide during our research studies. This Privacy Policy outlines how we collect, use, and protect your data.
             </p>
 
             <h2 className="text-2xl font-bold text-slate-900 mt-10 mb-4">1. Anonymous Data Collection</h2>

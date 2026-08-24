@@ -9,11 +9,11 @@ const Footer: React.FC = () => {
         <div className="flex flex-col md:flex-row justify-between items-center gap-6">
           <Link to="/" className="flex items-center gap-2">
             <Compass size={20} className="text-slate-900" />
-            <span className="font-bold text-lg text-slate-900">UzCombinator</span>
+            <span className="font-bold text-lg text-slate-900">Research Lab</span>
           </Link>
           
           <div className="text-gray-500 text-sm">
-            &copy; 2026 UzCombinator Research Lab. All rights reserved.
+            &copy; 2026 Research Lab. All rights reserved.
           </div>
 
           <div className="flex gap-4 sm:space-x-4">

@@ -16,7 +16,7 @@ export const LandingPage: React.FC = () => {
       
       <footer className="bg-white border-t border-brand-charcoal/10 py-8">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center text-sm text-brand-charcoal/50">
-          <p>&copy; {new Date().getFullYear()} UzCombinator Research Lab. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} Research Lab. All rights reserved.</p>
           <div className="mt-4">
             <a href="/admin/login" className="hover:text-brand-charcoal transition-colors">
               Admin Portal

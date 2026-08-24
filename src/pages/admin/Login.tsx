@@ -41,7 +41,7 @@ export const AdminLogin: React.FC = () => {
         <div className="backdrop-blur-xl bg-slate-900/50 p-8 rounded-2xl shadow-2xl border border-white/10">
           <div className="mb-8 text-center">
             <h1 className="text-3xl font-bold text-white tracking-tight mb-2">Lab Admin</h1>
-            <p className="text-slate-400">Sign in to UzCombinator Research Lab</p>
+            <p className="text-slate-400">Sign in to Research Lab</p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-6">

@@ -31,7 +31,7 @@ export const AdminLayout: React.FC = () => {
       <aside className="w-72 bg-[#0F172A] border-r border-slate-800 flex flex-col shadow-xl z-20">
         <div className="p-6">
           <h1 className="text-xl font-bold bg-gradient-to-r from-[#F4C542] to-yellow-200 bg-clip-text text-transparent">
-            UzCombinator Lab
+            Research Lab
           </h1>
           <p className="text-sm text-slate-400 mt-1">Research Admin</p>
         </div>

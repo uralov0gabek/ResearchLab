@@ -1,44 +1,141 @@
-import React from 'react';
+"use client";
+
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Compass } from 'lucide-react';
+import { Compass, Menu, X } from 'lucide-react';
 
 const Navbar: React.FC = () => {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    // Cleanup on unmount
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isMobileMenuOpen]);
+
+  const navLinks = [
+    { name: 'About', href: '/#about', isExternal: true },
+    { name: 'Methodology', href: '/#methodology', isExternal: true },
+    { name: 'Contact', href: '/contact', isExternal: false },
+    { name: 'Login', href: '/admin', isExternal: false },
+  ];
+
+  const closeMenu = () => {
+    setIsMobileMenuOpen(false);
+  };
+
   return (
-    <nav className="fixed top-0 left-0 w-full z-50 bg-[#FFFDF5] border-b border-gray-200 shadow-sm">
+    <nav className="fixed top-0 left-0 w-full z-50 bg-[#FFFDF5] border-b border-gray-200 shadow-sm overflow-x-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
-          <Link to="/" className="flex items-center gap-2">
+          <Link to="/" className="flex items-center gap-2" onClick={closeMenu}>
             <div className="p-2 bg-slate-900 text-[#F4C542] rounded-lg">
               <Compass size={24} strokeWidth={2.5} />
             </div>
             <span className="font-bold text-xl text-slate-900 tracking-tight">
-              UzCombinator Research Lab
+              Research Lab
             </span>
           </Link>
           
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-8">
-            <a href="/#about" className="text-sm font-medium text-gray-600 hover:text-slate-900 transition-colors">About</a>
-            <a href="/#methodology" className="text-sm font-medium text-gray-600 hover:text-slate-900 transition-colors">Methodology</a>
-            <Link to="/contact" className="text-sm font-medium text-gray-600 hover:text-slate-900 transition-colors">Contact</Link>
-            <Link 
-              to="/admin" 
-              className="text-sm font-medium text-gray-600 hover:text-slate-900 transition-colors"
-            >
-              Login
-            </Link>
+            {navLinks.map((link) => (
+              link.isExternal ? (
+                <a 
+                  key={link.name}
+                  href={link.href} 
+                  className="text-sm font-medium text-gray-600 hover:text-slate-900 transition-colors p-2"
+                >
+                  {link.name}
+                </a>
+              ) : (
+                <Link 
+                  key={link.name}
+                  to={link.href} 
+                  className="text-sm font-medium text-gray-600 hover:text-slate-900 transition-colors p-2"
+                >
+                  {link.name}
+                </Link>
+              )
+            ))}
           </div>
 
-          {/* Mobile menu button (Simplified for now) */}
-          <div className="md:hidden flex items-center">
-            <button className="text-gray-600 hover:text-slate-900 focus:outline-none">
-              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
+          {/* Mobile menu button */}
+          <div className="flex md:hidden items-center">
+            <button 
+              onClick={toggleMobileMenu}
+              className="p-3 text-gray-600 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 rounded-md"
+              aria-label="Toggle menu"
+              aria-expanded={isMobileMenuOpen}
+            >
+              {isMobileMenuOpen ? (
+                <X className="h-6 w-6" aria-hidden="true" />
+              ) : (
+                <Menu className="h-6 w-6" aria-hidden="true" />
+              )}
             </button>
           </div>
         </div>
       </div>
+
+      {/* Mobile Menu Overlay */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden fixed inset-0 z-50 bg-[#FFFDF5] flex flex-col h-screen pt-20 px-4">
+          {/* Top bar inside the menu overlay to match the header styling */}
+          <div className="absolute top-0 left-0 w-full px-4 sm:px-6 h-20 flex justify-between items-center border-b border-gray-200 bg-[#FFFDF5]">
+            <Link to="/" className="flex items-center gap-2" onClick={closeMenu}>
+              <div className="p-2 bg-slate-900 text-[#F4C542] rounded-lg">
+                <Compass size={24} strokeWidth={2.5} />
+              </div>
+              <span className="font-bold text-xl text-slate-900 tracking-tight">
+                Research Lab
+              </span>
+            </Link>
+            <button 
+              onClick={toggleMobileMenu}
+              className="p-3 text-gray-600 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 rounded-md"
+              aria-label="Close menu"
+            >
+              <X className="h-6 w-6" aria-hidden="true" />
+            </button>
+          </div>
+          
+          {/* Mobile Nav Links */}
+          <div className="flex flex-col gap-4 mt-6">
+            {navLinks.map((link) => (
+              link.isExternal ? (
+                <a 
+                  key={link.name}
+                  href={link.href} 
+                  onClick={closeMenu}
+                  className="text-lg font-medium text-slate-900 p-3 hover:bg-gray-100 rounded-md transition-colors"
+                >
+                  {link.name}
+                </a>
+              ) : (
+                <Link 
+                  key={link.name}
+                  to={link.href} 
+                  onClick={closeMenu}
+                  className="text-lg font-medium text-slate-900 p-3 hover:bg-gray-100 rounded-md transition-colors"
+                >
+                  {link.name}
+                </Link>
+              )
+            ))}
+          </div>
+        </div>
+      )}
     </nav>
   );
 };
