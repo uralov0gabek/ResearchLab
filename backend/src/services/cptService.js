@@ -1,5 +1,11 @@
+/**
+ * Calculates the Certainty Equivalent (CE) for a set of choices.
+ *
+ * @param {Array<{sureAmount: number, choice: 'A' | 'B'}>} choices - Array of user choices
+ * @param {boolean} [isLoss=false] - Whether the gamble involves losses
+ * @returns {number} The calculated Certainty Equivalent
+ */
 const calculateCertaintyEquivalent = (choices, isLoss = false) => {
-  // choices is an array of { sureAmount: number, choice: 'A' | 'B' }
   // A = Sure Amount, B = Gamble
   if (choices.length === 0) return 0;
   
@@ -37,9 +43,13 @@ const calculateCertaintyEquivalent = (choices, isLoss = false) => {
   return ((highestRejected + lowestAccepted) / 2) * (isLoss ? -1 : 1);
 };
 
+/**
+ * Calculates the Indifference Point for mixed gambles (Loss Aversion).
+ *
+ * @param {Array<{gambleAmount1: number, choice: 'A' | 'B'}>} choices - User choices
+ * @returns {number} The indifference point gain amount
+ */
 const calculateIndifferenceMixed = (choices) => {
-  // choices is an array of { gambleAmount1: number (Gain), choice: 'A' (Sure 0) | 'B' (Mixed Gamble) }
-  if (choices.length === 0) return 0;
   
   const sorted = [...choices].sort((a, b) => a.gambleAmount1 - b.gambleAmount1);
   
@@ -72,19 +82,28 @@ const calculateIndifferenceMixed = (choices) => {
   return (highestRejected + lowestAccepted) / 2;
 };
 
-const computeAlphaBeta = (ce, p, x, y = 0) => {
-  // α = ln(CE) / ln(p * x) simplified for single non-zero outcome
-  // This is a simplified proxy. 
-  // v(CE) = p * v(x). If v(x) = x^α, CE^α = p * x^α => CE = p^(1/α) * x => α = ln(p) / ln(CE/x)
-  if (ce <= 0 || x <= 0) return 1.0;
+/**
+ * Computes Alpha or Beta (Value sensitivity for gains or losses).
+ * Uses the proxy formula: α = ln(p) / ln(CE/x).
+ *
+ * @param {number} ce - Certainty Equivalent
+ * @param {number} p - Probability of non-zero outcome
+ * @param {number} x - Gamble amount
+ * @returns {number} The calculated sensitivity parameter
+ */
+const computeAlphaBeta = (ce, p, x) => {
   if (ce >= x) return 0.1; // extreme boundary
   return Math.log(p) / Math.log(ce / x);
 };
 
+/**
+ * Main entry point to calculate all CPT Parameters from user answers and database tasks.
+ *
+ * @param {Object} answers - Mapping of question IDs to user answers
+ * @param {Array} cptTasks - Raw task configuration from the database
+ * @returns {Object} Object containing { alpha, beta, lambda, gamma, delta }
+ */
 const calculateCPTParameters = (answers, cptTasks) => {
-  // cptTasks: array of DB rows from cpt_tasks table
-  
-  // Group tasks by block
   const blocks = {
     G1: [], G2: [], G3: [],
     L1: [], L2: [], L3: [],
@@ -99,10 +118,23 @@ const calculateCPTParameters = (answers, cptTasks) => {
 
   // Collect choices
   const getChoices = (blockTasks) => {
-    return blockTasks.map(t => ({
-      ...t,
-      choice: answers[`cpt_${t.id}`] || answers[t.id]
-    })).filter(t => t.choice);
+    return blockTasks.map(t => {
+      let choice = answers[`cpt_${t.id}`] || answers[t.id];
+      if (!choice) {
+        // Search inside nested lottery_response from frontend
+        for (const key in answers) {
+          const val = answers[key];
+          if (val && val.type === 'lottery_response' && Array.isArray(val.rows)) {
+            const rowIndex = val.rows.findIndex(r => r.id === t.id);
+            if (rowIndex !== -1 && val.choices) {
+              choice = val.choices[rowIndex];
+              break;
+            }
+          }
+        }
+      }
+      return { ...t, choice };
+    }).filter(t => t.choice);
   };
 
   // 1. Calculate Alphas (Gains)
@@ -154,25 +186,47 @@ const calculateCPTParameters = (answers, cptTasks) => {
   return { alpha, beta, lambda, gamma, delta };
 };
 
+/**
+ * Extracts generation cohort based on the user's birth year answer.
+ *
+ * @param {Object} answers - Mapping of question IDs to answers
+ * @returns {string} The demographic cohort (Boomers, Gen X, Millennials, Gen Z)
+ */
 const extractGeneration = (answers) => {
-  let age = 30; // default
+  let birthYear = 1990; // default
   for (const key in answers) {
     const val = answers[key];
-    if (typeof val === 'string' && !isNaN(Number(val))) {
-      const num = Number(val);
-      if (num >= 18 && num <= 100) { age = num; break; }
+    if (typeof val === 'string' && /^\d{4}$/.test(val.trim())) {
+      const num = Number(val.trim());
+      // Valid birth year check
+      if (num >= 1900 && num <= new Date().getFullYear()) { 
+        birthYear = num; 
+        break; 
+      }
     }
   }
-  if (age >= 60) return 'Boomers';
-  if (age >= 44) return 'Gen X';
-  if (age >= 28) return 'Millennials';
+  
+  if (birthYear <= 1964) return 'Boomers';
+  if (birthYear <= 1980) return 'Gen X';
+  if (birthYear <= 1996) return 'Millennials';
   return 'Gen Z';
 };
 
+/**
+ * Extracts the user's role (Founder, VC, Worker) based on their answers.
+ *
+ * @param {Object} answers - Mapping of question IDs to answers
+ * @returns {string} The parsed role
+ */
 const extractRole = (answers) => {
   for (const key in answers) {
     const val = answers[key];
-    if (val === 'Founder' || val === 'VC' || val === 'Worker' || val === 'Investor') return val;
+    if (typeof val === 'string') {
+      const lower = val.toLowerCase();
+      if (lower.includes('i run my own business')) return 'Founder';
+      if (lower.includes('i am an investor') || lower.includes('venture capitalist')) return 'VC';
+      if (lower.includes('employee') || lower.includes('salary') || lower.includes('wage')) return 'Worker';
+    }
   }
   return 'Worker';
 };

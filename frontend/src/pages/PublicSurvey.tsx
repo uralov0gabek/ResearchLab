@@ -1,228 +1,60 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React from 'react';
 import { ArrowRight, ArrowLeft, CheckCircle, X, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { apiFetch } from '../services/api/apiClient';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
-import CPTQuestionCard, { type LotteryRow } from '../components/CPTQuestionCard';
-
-type QuestionType = 'short_text' | 'single_choice' | 'multiple_choice' | 'number_input' | 'lottery';
-
-interface Question {
-  id: string;
-  type: QuestionType;
-  text: string;
-  block_name: string;
-  options?: any;
-  dependsOn?: {
-    questionId: string;
-    expectedValue: string;
-  };
-}
-
-const STORAGE_KEY = 'survey_session_data';
+import { useSurvey } from '../hooks/useSurvey';
+import { SurveyLoader } from '../components/survey/SurveyLoader';
+import { SurveyCompletion } from '../components/survey/SurveyCompletion';
+import { QuestionRenderer } from '../components/survey/QuestionRenderer';
+import type { LotteryRow, LotteryResponse } from '../types';
 
 const PublicSurvey: React.FC = () => {
-  const [sessionId, setSessionId] = useState<string>('');
-  const [currentStep, setCurrentStep] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, any>>({});
-  const [questions, setQuestions] = useState<Question[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  
-  const [isSubmitted, setIsSubmitted] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
-  const navigate = useNavigate();
+  const {
+    currentStep,
+    answers,
+    questions,
+    visibleQuestions,
+    isLoading,
+    isSubmitting,
+    isSubmitted,
+    submitError,
+    question,
+    handleAnswerChange,
+    handleNext,
+    handleBack,
+    handleExit,
+    handleSubmit
+  } = useSurvey();
 
-  useEffect(() => {
-    const fetchQuestions = async () => {
-      try {
-        setIsLoading(true);
-        const data = await apiFetch('/questions').catch(() => []);
-        
-        let allQuestions: Question[] = [];
-        if (Array.isArray(data)) {
-          allQuestions = data.map((q: any) => ({
-            id: String(q.id),
-            type: q.type as QuestionType,
-            text: q.question_text || '',
-            block_name: q.block_name || '',
-            options: q.options,
-            dependsOn: q.conditional_logic
-          }));
-        }
+  if (isSubmitted) {
+    return <SurveyCompletion />;
+  }
 
-        setQuestions(allQuestions);
-      } catch (err) {
-        console.error('Error fetching questions:', err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchQuestions();
-  }, []);
+  if (isLoading) {
+    return <SurveyLoader />;
+  }
 
-  useEffect(() => {
-    const cached = sessionStorage.getItem(STORAGE_KEY);
-    if (cached) {
-      try {
-        const parsed = JSON.parse(cached);
-        setSessionId(parsed.sessionId || crypto.randomUUID());
-        setCurrentStep(parsed.currentStep || 0);
-        setAnswers(parsed.answers || {});
-      } catch (e) {
-        setSessionId(crypto.randomUUID());
-      }
-    } else {
-      setSessionId(crypto.randomUUID());
-    }
-  }, []);
-
-  useEffect(() => {
-    if (sessionId) { 
-      sessionStorage.setItem(STORAGE_KEY, JSON.stringify({
-        sessionId,
-        currentStep,
-        answers
-      }));
-    }
-  }, [sessionId, currentStep, answers]);
-
-  const handleExit = () => {
-    sessionStorage.removeItem(STORAGE_KEY);
-    navigate('/');
-  };
-
-  const visibleQuestions = useMemo(() => {
-    return questions.filter(q => {
-      if (!q.dependsOn) return true;
-      const dependentAnswer = answers[q.dependsOn.questionId];
-      return dependentAnswer === q.dependsOn.expectedValue;
-    });
-  }, [answers, questions]);
-
-  useEffect(() => {
-    if (visibleQuestions.length > 0 && currentStep >= visibleQuestions.length) {
-      setCurrentStep(visibleQuestions.length - 1);
-    }
-  }, [visibleQuestions, currentStep]);
-
-  const handleAnswerChange = (questionId: string, value: any) => {
-    setAnswers(prev => ({ ...prev, [questionId]: value }));
-  };
-
-  const handleNext = () => {
-    if (currentStep < visibleQuestions.length - 1) {
-      setCurrentStep(prev => prev + 1);
-    }
-  };
-
-  const handleBack = () => {
-    if (currentStep > 0) {
-      setCurrentStep(prev => prev - 1);
-    }
-  };
-
-  const handleSubmit = async () => {
-    setIsSubmitting(true);
-    setSubmitError(null);
-    try {
-      await apiFetch('/responses', {
-        method: 'POST',
-        body: JSON.stringify({ userId: sessionId, answers })
-      });
-
-      sessionStorage.removeItem(STORAGE_KEY);
-      setIsSubmitted(true);
-    } catch (err: unknown) {
-      console.error('Submit error:', err);
-      setSubmitError(err instanceof Error ? err.message : 'Failed to submit survey. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const question = visibleQuestions[currentStep];
+  if (questions.length === 0) {
+    return <SurveyLoader isEmpty />;
+  }
 
   let isCurrentAnswerValid = false;
   let validationError = '';
   const answer = answers[question?.id];
   
-  if (question?.type === 'short_text') {
-    isCurrentAnswerValid = typeof answer === 'string' && answer.trim().length > 0;
-  } else if (question?.type === 'number_input') {
+  if (question?.type === 'short_text' || question?.type === 'number_input') {
     isCurrentAnswerValid = typeof answer === 'string' && answer.trim().length > 0;
   } else if (question?.type === 'single_choice') {
     isCurrentAnswerValid = !!answer;
   } else if (question?.type === 'multiple_choice') {
     isCurrentAnswerValid = Array.isArray(answer) && answer.length > 0;
   } else if (question?.type === 'lottery') {
-    // For lottery, must select A or B for all rows
-    if (answer && answer.choices) {
+    if (answer && typeof answer === 'object' && !Array.isArray(answer) && (answer as LotteryResponse).type === 'lottery_response' && (answer as LotteryResponse).choices) {
       const rows = question.options as LotteryRow[];
-      isCurrentAnswerValid = rows.length > 0 && answer.choices.length === rows.length && answer.choices.every((c: any) => c === 'A' || c === 'B');
+      const lotteryAnswer = answer as LotteryResponse;
+      isCurrentAnswerValid = rows.length > 0 && lotteryAnswer.choices.length === rows.length && lotteryAnswer.choices.every((c: any) => c === 'A' || c === 'B');
     }
-  }
-
-  if (isSubmitted) {
-    return (
-      <div className="min-h-screen flex flex-col bg-slate-50 text-gray-800 font-sans">
-        <Navbar />
-        <main className="flex-grow flex items-center justify-center p-4">
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
-            className="max-w-md w-full bg-white p-8 rounded-2xl shadow-sm border border-gray-100 text-center mt-20"
-          >
-            <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-6" />
-            <h2 className="text-3xl font-bold text-slate-900 mb-4">Thank You!</h2>
-            <p className="text-gray-600 mb-8">
-              Your responses have been recorded anonymously. We appreciate your contribution to this research.
-            </p>
-            <button
-              onClick={() => navigate('/')}
-              className="inline-flex justify-center items-center gap-2 px-6 py-3 rounded-xl bg-blue-600 text-white font-medium hover:bg-blue-700 transition-colors"
-            >
-              Return Home
-            </button>
-          </motion.div>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex flex-col bg-slate-50 text-gray-800 font-sans">
-        <Navbar />
-        <main className="flex-grow flex items-center justify-center p-4">
-          <div className="flex flex-col items-center">
-            <Loader2 className="w-12 h-12 text-blue-500 animate-spin mb-4" />
-            <p className="text-gray-500 font-medium">Loading survey...</p>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
-
-  if (questions.length === 0) {
-    return (
-      <div className="min-h-screen flex flex-col bg-slate-50 text-gray-800 font-sans">
-        <Navbar />
-        <main className="flex-grow flex items-center justify-center p-4">
-          <div className="text-center bg-white p-8 rounded-2xl shadow-sm border border-gray-100 max-w-md">
-            <h2 className="text-2xl font-bold text-slate-900 mb-4">No Survey Available</h2>
-            <p className="text-gray-600 mb-6">There are currently no published questions. Please check back later.</p>
-            <button onClick={() => navigate('/')} className="px-6 py-2 bg-blue-600 text-white rounded-lg">Return Home</button>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
   }
 
   return (
@@ -269,139 +101,12 @@ const PublicSurvey: React.FC = () => {
                 </h2>
 
                 <div className="flex-grow">
-                  {question.type === 'short_text' && (
-                    <div className="space-y-2">
-                      <input
-                        type="text"
-                        value={answers[question.id] || ''}
-                        onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                        className="w-full text-xl p-4 border-b-2 border-gray-200 focus:border-blue-500 outline-none bg-transparent transition-colors"
-                        placeholder="Type your answer here..."
-                        autoFocus
-                      />
-                      {validationError && (
-                        <p className="text-red-500 text-sm mt-2">{validationError}</p>
-                      )}
-                    </div>
-                  )}
-
-                  {question.type === 'number_input' && (
-                    <div className="space-y-2">
-                      <input
-                        type="number"
-                        value={answers[question.id] || ''}
-                        onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                        className="w-full text-xl p-4 border-b-2 border-gray-200 focus:border-blue-500 outline-none bg-transparent transition-colors"
-                        placeholder="Type your number here..."
-                        autoFocus
-                      />
-                      {validationError && (
-                        <p className="text-red-500 text-sm mt-2">{validationError}</p>
-                      )}
-                    </div>
-                  )}
-
-                  {question.type === 'lottery' && question.options && (
-                    <CPTQuestionCard
-                      questionId={question.id}
-                      rows={question.options as LotteryRow[]}
-                      selectedValues={answer?.selectedValues || {}}
-                      onSelect={(rowIndex, choice) => {
-                        const currentChoices = answer?.choices ? [...answer.choices] : new Array(question.options.length).fill(null);
-                        const currentSelectedValues = answer?.selectedValues ? { ...answer.selectedValues } : {};
-                        
-                        currentChoices[rowIndex] = choice;
-                        currentSelectedValues[rowIndex] = choice;
-
-                        handleAnswerChange(question.id, {
-                          type: 'lottery_response',
-                          choices: currentChoices,
-                          selectedValues: currentSelectedValues,
-                          rows: question.options
-                        });
-                      }}
-                    />
-                  )}
-
-                  {question.type === 'single_choice' && question.options && (
-                    <div className="space-y-3">
-                      {question.options.map((option: string, idx: number) => {
-                        const isSelected = answers[question.id] === option;
-                        return (
-                          <label 
-                            key={idx} 
-                            className={`block p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                              isSelected 
-                                ? 'border-blue-500 bg-blue-50/50 ring-1 ring-blue-500' 
-                                : 'border-gray-100 hover:border-blue-200'
-                            }`}
-                          >
-                            <div className="flex items-center gap-3">
-                              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                                isSelected ? 'border-blue-500' : 'border-gray-300'
-                              }`}>
-                                {isSelected && <div className="w-2.5 h-2.5 bg-blue-500 rounded-full"></div>}
-                              </div>
-                              <span className={`text-lg ${isSelected ? 'text-slate-900 font-medium' : 'text-slate-700'}`}>
-                                {option}
-                              </span>
-                            </div>
-                            <input 
-                              type="radio" 
-                              name={question.id} 
-                              value={option}
-                              className="hidden"
-                              checked={isSelected}
-                              onChange={() => handleAnswerChange(question.id, option)}
-                            />
-                          </label>
-                        );
-                      })}
-                    </div>
-                  )}
-
-                  {question.type === 'multiple_choice' && question.options && (
-                    <div className="space-y-3">
-                      {question.options.map((option: string, idx: number) => {
-                        const currentAnswers = (answers[question.id] as string[]) || [];
-                        const isChecked = currentAnswers.includes(option);
-                        return (
-                          <label 
-                            key={idx} 
-                            className={`block p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                              isChecked 
-                                ? 'border-blue-500 bg-blue-50/50 ring-1 ring-blue-500' 
-                                : 'border-gray-100 hover:border-blue-200'
-                            }`}
-                          >
-                            <div className="flex items-center gap-3">
-                              <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
-                                isChecked ? 'border-blue-500 bg-blue-500' : 'border-gray-300'
-                              }`}>
-                                {isChecked && <CheckCircle className="w-3.5 h-3.5 text-white" />}
-                              </div>
-                              <span className={`text-lg ${isChecked ? 'text-slate-900 font-medium' : 'text-slate-700'}`}>
-                                {option}
-                              </span>
-                            </div>
-                            <input 
-                              type="checkbox" 
-                              className="hidden"
-                              checked={isChecked}
-                              onChange={(e) => {
-                                const currentAnswers = (answers[question.id] as string[]) || [];
-                                if (e.target.checked) {
-                                  handleAnswerChange(question.id, [...currentAnswers, option]);
-                                } else {
-                                  handleAnswerChange(question.id, currentAnswers.filter((a: string) => a !== option));
-                                }
-                              }}
-                            />
-                          </label>
-                        );
-                      })}
-                    </div>
-                  )}
+                  <QuestionRenderer 
+                    question={question}
+                    answer={answer}
+                    validationError={validationError}
+                    onAnswerChange={handleAnswerChange}
+                  />
                 </div>
               </motion.div>
             </AnimatePresence>
@@ -455,7 +160,7 @@ const PublicSurvey: React.FC = () => {
                     )}
                   </button>
                   {submitError && (
-                    <p className="text-red-500 text-sm mt-2 absolute top-full mt-2 right-0">{submitError}</p>
+                    <p className="text-red-500 text-sm mt-2 absolute top-full right-0">{submitError}</p>
                   )}
                 </div>
               )}
