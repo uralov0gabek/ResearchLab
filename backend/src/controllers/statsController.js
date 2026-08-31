@@ -81,7 +81,8 @@ const getDashboardStats = async (req, res, next) => {
       roleData
     });
   } catch (error) {
-    next(error);
+    console.error('Stats Error:', error);
+    res.status(400).json({ error: error.message || 'Failed to fetch stats' });
   }
 };
 
