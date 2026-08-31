@@ -128,9 +128,10 @@ const SurveyBuilder: React.FC = () => {
       if (data) {
         setActiveModule(data.id);
       }
-    } catch (err) {
-      console.error('Error adding module:', err);
-      alert('Failed to add module.');
+    } catch (err: any) {
+      const errorMsg = err.response?.data?.error || err.message || 'Unknown error';
+      console.error("ADD_MODULE_ERROR:", errorMsg);
+      alert(`Failed to add module: ${errorMsg}`);
     }
   };
 
