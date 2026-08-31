@@ -18,6 +18,11 @@ const verifyAdmin = (req, res, next) => {
     return res.status(401).json({ error: 'Unauthorized: Empty token' });
   }
 
+  if (!process.env.SUPABASE_JWT_SECRET) {
+    console.error("CRITICAL ERROR: SUPABASE_JWT_SECRET is missing from environment variables.");
+    return res.status(500).json({ error: "Server Configuration Error" });
+  }
+
   try {
     const decoded = jwt.verify(token, process.env.SUPABASE_JWT_SECRET);
     req.user = decoded;
