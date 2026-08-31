@@ -1,38 +1,38 @@
-const jwt = require('jsonwebtoken');
+const { createClient } = require('@supabase/supabase-js');
 
-/**
- * Middleware to verify admin access via Supabase JWT
- * Ensures the request has a valid Bearer token.
- */
-const verifyAdmin = (req, res, next) => {
-  console.log('Incoming Auth Header:', req.headers.authorization);
-  const authHeader = req.headers.authorization;
-  
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'Unauthorized: No token provided' });
-  }
+// Initialize Supabase with Service Role Key
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 
-  const token = authHeader.replace(/^Bearer\s+/, '').trim();
-  
-  if (!token) {
-    return res.status(401).json({ error: 'Unauthorized: Empty token' });
-  }
-
-  if (!process.env.SUPABASE_JWT_SECRET) {
-    console.error("CRITICAL ERROR: SUPABASE_JWT_SECRET is missing from environment variables.");
-    return res.status(500).json({ error: "Server Configuration Error" });
-  }
-
+const verifyAdmin = async (req, res, next) => {
   try {
-    const decoded = jwt.verify(token, process.env.SUPABASE_JWT_SECRET);
-    req.user = decoded;
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Unauthorized: Missing or invalid token format' });
+    }
+
+    const token = authHeader.replace(/^Bearer\s+/, '').trim();
+
+    // Let Supabase handle the cryptographic verification!
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+
+    if (error || !user) {
+      console.error("Supabase Auth Verification Failed:", error?.message);
+      return res.status(403).json({ error: 'Forbidden: Invalid or expired token' });
+    }
+
+    // Attach user to request
+    req.user = user;
+    
+    // (Optional RBAC check can go here later: if (user.role !== 'admin') ... )
+    
     next();
-  } catch (error) {
-    console.error("JWT Verification Failed:", error.message);
-    return res.status(403).json({ error: 'Forbidden: Invalid or expired token' });
+  } catch (err) {
+    console.error("Auth Middleware Error:", err.message);
+    return res.status(500).json({ error: 'Internal Server Error during authentication' });
   }
 };
 
-module.exports = {
-  verifyAdmin
-};
+module.exports = { verifyAdmin };
