@@ -28,10 +28,14 @@ const createModule = async (req, res, next) => {
       .select()
       .single();
       
-    if (error) throw error;
+    if (error) {
+      console.error(error.message);
+      return res.status(400).json({ error: error.message });
+    }
     res.json(data);
   } catch (error) {
-    next(error);
+    console.error(error.message);
+    return res.status(400).json({ error: error.message });
   }
 };
 
