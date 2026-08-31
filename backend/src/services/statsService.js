@@ -8,25 +8,17 @@ const AppError = require('../utils/AppError');
  */
 const getAggregatedStats = async () => {
   const { data: responses, error: respError } = await supabaseAdmin.from('responses').select('*');
-  const { data: answers, error: ansError } = await supabaseAdmin.from('answers').select('*');
-  const { data: modules, error: qError } = await supabaseAdmin.from('survey_modules').select('id, questions(id)').eq('status', 'active');
+  const { data: questions, error: qError } = await supabaseAdmin.from('questions').select('*');
     
   if (respError) throw new AppError(respError.message || 'Failed to fetch responses', 500);
-  if (ansError) throw new AppError(ansError.message || 'Failed to fetch answers', 500);
-  if (qError) throw new AppError(qError.message || 'Failed to fetch survey modules', 500);
+  if (qError) throw new AppError(qError.message || 'Failed to fetch questions', 500);
 
-  const numActiveQuestions = modules?.reduce((acc, m) => acc + (m.questions?.length || 0), 0) || 0;
+  const numActiveQuestions = questions?.length || 0;
   const totalResponses = responses?.length || 0;
-
-  const answersByResponse = {};
-  answers?.forEach(a => {
-    if (!answersByResponse[a.response_id]) answersByResponse[a.response_id] = {};
-    answersByResponse[a.response_id][a.question_id] = a.value;
-  });
 
   let completeCount = 0;
   responses?.forEach(r => {
-    const rAnswers = answersByResponse[r.id] || {};
+    const rAnswers = r.answers || {};
     if (numActiveQuestions > 0 && Object.keys(rAnswers).length >= numActiveQuestions) {
       completeCount++;
     }
@@ -43,21 +35,53 @@ const getAggregatedStats = async () => {
     'Gen Z': { totalRisk: 0, count: 0 }
   };
 
-  const roleAgg = {
-    'Founder': { totalLossAversion: 0, count: 0 },
-    'VC': { totalLossAversion: 0, count: 0 },
-    'Worker': { totalLossAversion: 0, count: 0 }
-  };
+  // Dynamically determine the role question based on conditional logic dependencies
+  let roleQuestionId = null;
+  let roleOptions = [];
+  
+  if (questions) {
+    for (const q of questions) {
+      if (q.conditional_logic && q.conditional_logic.questionId) {
+        roleQuestionId = q.conditional_logic.questionId;
+        break; // Assume the primary branch trigger is the Role question
+      }
+    }
+    
+    if (roleQuestionId) {
+      const roleQ = questions.find(q => String(q.id) === String(roleQuestionId));
+      if (roleQ && roleQ.options && Array.isArray(roleQ.options)) {
+        roleOptions = roleQ.options;
+      }
+    }
+  }
+
+  // Fallback if no dynamic roles configured
+  if (roleOptions.length === 0) {
+    roleOptions = ['Founder', 'VC', 'Worker'];
+  }
+
+  const roleAgg = {};
+  roleOptions.forEach(role => {
+    roleAgg[role] = { totalLossAversion: 0, count: 0 };
+  });
 
   responses?.forEach(r => {
-    const rAnswers = answersByResponse[r.id] || {};
-    
-    // We use the raw answers object from responses table if available to get demographics
-    // Since 'answers' table might be incomplete if they didn't finish module by module
-    const demographicAnswers = r.answers || rAnswers; 
+    const demographicAnswers = r.answers || {}; 
 
     const gen = extractGeneration(demographicAnswers) || 'Millennials';
-    const role = extractRole(demographicAnswers) || 'Worker';
+    
+    // Dynamically extract the role
+    let role = 'Worker';
+    if (roleQuestionId && demographicAnswers[roleQuestionId]) {
+      role = demographicAnswers[roleQuestionId];
+    } else {
+      // Legacy fallback
+      role = extractRole(demographicAnswers) || 'Worker';
+    }
+
+    if (!roleAgg[role]) {
+      roleAgg[role] = { totalLossAversion: 0, count: 0 }; // Handle unconfigured roles gracefully
+    }
     
     const risk = r.calculated_cpt_parameters?.alpha || 1.0;
     const lossAversion = r.calculated_cpt_parameters?.lambda || 2.25;
@@ -67,10 +91,8 @@ const getAggregatedStats = async () => {
       genAgg[gen].count += 1;
     }
 
-    if (roleAgg[role]) {
-      roleAgg[role].totalLossAversion += lossAversion;
-      roleAgg[role].count += 1;
-    }
+    roleAgg[role].totalLossAversion += lossAversion;
+    roleAgg[role].count += 1;
   });
 
   const genData = Object.keys(genAgg).map(gen => ({

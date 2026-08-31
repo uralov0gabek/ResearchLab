@@ -26,12 +26,15 @@ const saveResponse = async (userId, answers) => {
     final_calculated = calculateCPTParameters(answers, cptTasks);
   }
 
+  // Inject session ID into answers for tracking without violating FK
+  const finalAnswers = { ...answers, session_id: userId };
+
   // Insert into responses table
   const { error: responseError } = await supabaseAdmin
     .from('responses')
     .insert({
-      user_id: userId || null,
-      answers,
+      user_id: null, // Always null for anonymous users to avoid FK violations
+      answers: finalAnswers,
       calculated_cpt_parameters: final_calculated,
       completed_at: new Date().toISOString()
     });
