@@ -8,8 +8,11 @@ interface ProcessedResponse {
   date: string;
   generation: string;
   role: string;
-  riskTolerance: string;
-  lossAversion: string;
+  alpha: string;
+  beta: string;
+  lambda: string;
+  gamma: string;
+  delta: string;
 }
 
 const Responses: React.FC = () => {
@@ -86,8 +89,11 @@ const Responses: React.FC = () => {
                 <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Date</th>
                 <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Generation</th>
                 <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Role</th>
-                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Risk (α)</th>
-                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Loss Av. (λ)</th>
+                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">α</th>
+                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">β</th>
+                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">λ</th>
+                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">γ</th>
+                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">δ</th>
                 <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Action</th>
               </tr>
             </thead>
@@ -108,8 +114,11 @@ const Responses: React.FC = () => {
                       {row.role}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-sm text-slate-700">{row.riskTolerance}</td>
-                  <td className="px-6 py-4 text-sm text-slate-700">{row.lossAversion}</td>
+                  <td className="px-6 py-4 text-sm text-slate-700">{row.alpha}</td>
+                  <td className="px-6 py-4 text-sm text-slate-700">{row.beta}</td>
+                  <td className="px-6 py-4 text-sm text-slate-700">{row.lambda}</td>
+                  <td className="px-6 py-4 text-sm text-slate-700">{row.gamma}</td>
+                  <td className="px-6 py-4 text-sm text-slate-700">{row.delta}</td>
                   <td className="px-6 py-4 text-sm text-right">
                     <button aria-label="View Details" className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors inline-flex items-center gap-1.5" title="View Details">
                       <Eye className="w-4 h-4" />

@@ -4,7 +4,7 @@ const getQuestions = async (req, res, next) => {
   try {
     const moduleId = req.query.module_id;
     
-    let query = supabase.from('questions').select('*');
+    let query = supabase.from('questions').select('*, survey_modules(target_role)');
     if (moduleId) {
       query = query.eq('module_id', moduleId);
       query = query.order('order_index', { ascending: true });

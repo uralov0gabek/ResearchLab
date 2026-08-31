@@ -19,6 +19,7 @@ interface Question {
     questionId: string;
     expectedValue: string;
   };
+  target_role?: string;
   cptData?: {
     sureAmount: number;
     gambleAmount1: number;
@@ -57,9 +58,10 @@ const PublicSurvey: React.FC = () => {
         let allQuestions: Question[] = [];
 
         if (Array.isArray(questionsData)) {
-          const mappedData = questionsData.map((q: Record<string, unknown>) => ({
-            ...(q as any),
-            text: String(q.title || q.text || '')
+          const mappedData = questionsData.map((q: any) => ({
+            ...q,
+            text: String(q.title || q.text || ''),
+            target_role: q.survey_modules?.target_role
           })) as Question[];
           allQuestions = [...allQuestions, ...mappedData];
         }
@@ -123,13 +125,27 @@ const PublicSurvey: React.FC = () => {
     navigate('/');
   };
 
+  const currentRole = useMemo(() => {
+    for (const key in answers) {
+      const val = answers[key];
+      if (val === 'Founder' || val === 'VC' || val === 'Worker' || val === 'Investor') {
+        return val === 'Investor' ? 'VC' : val;
+      }
+    }
+    return null;
+  }, [answers]);
+
   const visibleQuestions = useMemo(() => {
     return questions.filter(q => {
+      if (q.target_role && currentRole && q.target_role !== currentRole) {
+        return false;
+      }
+
       if (!q.dependsOn) return true;
       const dependentAnswer = answers[q.dependsOn.questionId];
       return dependentAnswer === q.dependsOn.expectedValue;
     });
-  }, [answers, questions]);
+  }, [answers, questions, currentRole]);
 
   useEffect(() => {
     if (visibleQuestions.length > 0 && currentStep >= visibleQuestions.length) {
@@ -157,9 +173,20 @@ const PublicSurvey: React.FC = () => {
     setIsSubmitting(true);
     setSubmitError(null);
     try {
+      // Look for an email in the answers (assuming question text contains "email")
+      let email = undefined;
+      const cleanAnswers = { ...answers };
+      
+      for (const q of questions) {
+        if (q.text.toLowerCase().includes('email') && answers[q.id]) {
+          email = answers[q.id] as string;
+          delete cleanAnswers[q.id]; // Remove from answers to keep it detached in DB
+        }
+      }
+
       await apiFetch('/responses', {
         method: 'POST',
-        body: JSON.stringify({ sessionId, answers })
+        body: JSON.stringify({ sessionId, answers: cleanAnswers, email })
       });
 
       // Success

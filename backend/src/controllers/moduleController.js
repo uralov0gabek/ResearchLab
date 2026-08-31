@@ -35,6 +35,25 @@ const createModule = async (req, res, next) => {
   }
 };
 
+const updateModule = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { target_role } = req.body;
+    
+    const { data, error } = await supabase
+      .from('survey_modules')
+      .update({ target_role })
+      .eq('id', id)
+      .select()
+      .single();
+      
+    if (error) throw error;
+    res.json(data);
+  } catch (error) {
+    next(error);
+  }
+};
+
 const deleteModule = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -49,5 +68,6 @@ const deleteModule = async (req, res, next) => {
 module.exports = {
   getModules,
   createModule,
+  updateModule,
   deleteModule
 };

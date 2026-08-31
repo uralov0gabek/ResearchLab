@@ -1,9 +1,9 @@
 const { supabase } = require('../config/supabase');
-const { calculateRiskAversion, calculateLossAversion, extractGeneration, extractRole } = require('../utils/mathEngine');
+const { calculateCPTParameters, extractGeneration, extractRole } = require('../utils/mathEngine');
 
 const submitResponse = async (req, res, next) => {
   try {
-    const { sessionId, answers } = req.body;
+    const { sessionId, answers, email } = req.body;
     
     if (!sessionId || typeof sessionId !== 'string' || !answers || typeof answers !== 'object') {
       const error = new Error('Missing or invalid sessionId or answers');
@@ -29,11 +29,35 @@ const submitResponse = async (req, res, next) => {
       value
     }));
 
-    const { error: answersError } = await supabase
-      .from('answers')
-      .insert(answersData);
+    if (answersData.length > 0) {
+      const { error: answersError } = await supabase
+        .from('answers')
+        .insert(answersData);
+      if (answersError) throw answersError;
+    }
 
-    if (answersError) throw answersError;
+    // 3. Compute and Insert CPT Results
+    const { data: cptTasks, error: cptTasksError } = await supabase.from('cpt_tasks').select('*');
+    if (!cptTasksError && cptTasks && cptTasks.length > 0) {
+      const { alpha, beta, lambda, gamma, delta } = calculateCPTParameters(answers, cptTasks);
+      
+      const { error: cptResultError } = await supabase
+        .from('cpt_results')
+        .insert({
+          response_id: sessionId,
+          alpha, beta, lambda, gamma, delta
+        });
+      
+      if (cptResultError) console.error("Error inserting CPT results:", cptResultError);
+    }
+
+    // 4. Optionally insert email detached
+    if (email) {
+      const { error: emailError } = await supabase
+        .from('respondent_emails')
+        .insert({ email });
+      if (emailError) console.error("Error inserting email:", emailError);
+    }
 
     res.json({ success: true });
   } catch (error) {
@@ -53,18 +77,25 @@ const getResponses = async (req, res, next) => {
     const { data: answers, error: ansError } = await supabase.from('answers').select('*');
     if (ansError) throw ansError;
 
+    const { data: cptResults, error: cptError } = await supabase.from('cpt_results').select('*');
+    if (cptError) throw cptError;
+
     const answersByResponse = {};
     answers?.forEach(a => {
       if (!answersByResponse[a.response_id]) answersByResponse[a.response_id] = {};
       answersByResponse[a.response_id][a.question_id] = a.value;
     });
 
+    const cptByResponse = {};
+    cptResults?.forEach(c => {
+      cptByResponse[c.response_id] = c;
+    });
+
     const processed = responses.map(r => {
       const rAnswers = answersByResponse[r.id] || {};
+      const cpt = cptByResponse[r.id] || {};
       const gen = extractGeneration(rAnswers) || 'Unknown';
       const role = extractRole(rAnswers) || 'Unknown';
-      const risk = calculateRiskAversion(rAnswers);
-      const loss = calculateLossAversion(rAnswers);
 
       return {
         id: r.id,
@@ -76,8 +107,11 @@ const getResponses = async (req, res, next) => {
         }),
         generation: gen,
         role: role,
-        riskTolerance: risk.toFixed(2),
-        lossAversion: loss.toFixed(2)
+        alpha: cpt.alpha?.toFixed(3) || 'N/A',
+        beta: cpt.beta?.toFixed(3) || 'N/A',
+        lambda: cpt.lambda?.toFixed(3) || 'N/A',
+        gamma: cpt.gamma?.toFixed(3) || 'N/A',
+        delta: cpt.delta?.toFixed(3) || 'N/A',
       };
     });
 

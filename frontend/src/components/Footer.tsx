@@ -12,8 +12,11 @@ const Footer: React.FC = () => {
             <span className="font-bold text-lg text-slate-900">Research Lab</span>
           </Link>
           
-          <div className="text-gray-500 text-sm">
-            &copy; 2026 Research Lab. All rights reserved.
+          <div className="text-gray-500 text-sm text-center md:text-left">
+            <p className="font-medium text-slate-700">Researcher: Saliyev Nurbek</p>
+            <p>Research Mentor: Mikhail Munenzon (Columbia double graduate, HSE professor)</p>
+            <p>Contributor: [Placeholder]</p>
+            <p className="mt-2">&copy; 2026 Research Lab. All rights reserved.</p>
           </div>
 
           <div className="flex gap-4 sm:space-x-4">

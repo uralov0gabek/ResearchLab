@@ -81,22 +81,32 @@ const Home: React.FC = () => {
       {/* What We Study (Grid) */}
       <section id="methodology" className="py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold text-slate-900 mb-6">What We Study</h2>
-            <p className="text-lg text-gray-600">
-              Our methodology leverages advanced behavioral economics frameworks to evaluate decision-making under uncertainty.
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <h2 className="text-3xl lg:text-4xl font-bold text-slate-900 mb-6">Our Core Research Questions</h2>
+            <p className="text-lg text-gray-600 mb-4">
+              We leverage Cumulative Prospect Theory (CPT) to analyze decision-making. Specifically, we investigate:
             </p>
+            <ul className="text-left text-lg text-gray-600 space-y-4 max-w-2xl mx-auto bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+              <li className="flex items-start gap-3">
+                <div className="w-6 h-6 rounded-full bg-[#F4C542]/20 text-[#c79a20] flex items-center justify-center shrink-0 mt-0.5">1</div>
+                <p>How CPT parameters—<strong>α</strong> (value sensitivity, gains), <strong>β</strong> (value sensitivity, losses), <strong>λ</strong> (loss aversion), <strong>γ</strong> (probability weighting, gains), and <strong>δ</strong> (probability weighting, losses)—differ across <strong>Founders</strong>, <strong>Salaried Workers</strong>, and <strong>VC Investors</strong>.</p>
+              </li>
+              <li className="flex items-start gap-3">
+                <div className="w-6 h-6 rounded-full bg-[#F4C542]/20 text-[#c79a20] flex items-center justify-center shrink-0 mt-0.5">2</div>
+                <p>How much of that psychological difference can be traced back to the generational shock of the <strong>early-1990s Soviet collapse</strong>.</p>
+              </li>
+            </ul>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mt-12">
             {/* Card 1 */}
             <div className="bg-white p-8 rounded-2xl shadow-[0_4px_24px_-8px_rgba(0,0,0,0.05)] border border-gray-100 hover:-translate-y-1 transition-transform duration-300">
               <div className="w-12 h-12 rounded-xl bg-slate-900 text-[#F4C542] flex items-center justify-center mb-6">
                 <TrendingUp size={24} />
               </div>
-              <h3 className="text-xl font-bold text-slate-900 mb-3">Generational Loss Aversion</h3>
+              <h3 className="text-xl font-bold text-slate-900 mb-3">Parameter Evaluation</h3>
               <p className="text-gray-600 leading-relaxed">
-                How different age groups weigh the psychological impact of losses versus equivalent gains in economic scenarios.
+                Extracting (α, β, λ, γ, δ) from structured lotteries to establish a quantitative baseline for each group.
               </p>
             </div>
 
@@ -105,9 +115,9 @@ const Home: React.FC = () => {
               <div className="w-12 h-12 rounded-xl bg-slate-900 text-[#F4C542] flex items-center justify-center mb-6">
                 <AlertTriangle size={24} />
               </div>
-              <h3 className="text-xl font-bold text-slate-900 mb-3">Risk and Uncertainty</h3>
+              <h3 className="text-xl font-bold text-slate-900 mb-3">Generational Shocks</h3>
               <p className="text-gray-600 leading-relaxed">
-                Measuring tolerances for ambiguity and known risks, particularly in environments with shifting macroeconomic factors.
+                Measuring how the severe economic instability of the 1990s continues to influence risk tolerance today.
               </p>
             </div>
 
@@ -116,31 +126,9 @@ const Home: React.FC = () => {
               <div className="w-12 h-12 rounded-xl bg-slate-900 text-[#F4C542] flex items-center justify-center mb-6">
                 <Lightbulb size={24} />
               </div>
-              <h3 className="text-xl font-bold text-slate-900 mb-3">Startup Founders</h3>
+              <h3 className="text-xl font-bold text-slate-900 mb-3">Role Disparities</h3>
               <p className="text-gray-600 leading-relaxed">
-                Analyzing the specific risk profiles of entrepreneurs and how they navigate high-stakes, uncertain environments.
-              </p>
-            </div>
-
-            {/* Card 4 */}
-            <div className="bg-white p-8 rounded-2xl shadow-[0_4px_24px_-8px_rgba(0,0,0,0.05)] border border-gray-100 hover:-translate-y-1 transition-transform duration-300">
-              <div className="w-12 h-12 rounded-xl bg-slate-900 text-[#F4C542] flex items-center justify-center mb-6">
-                <Briefcase size={24} />
-              </div>
-              <h3 className="text-xl font-bold text-slate-900 mb-3">Venture Capital</h3>
-              <p className="text-gray-600 leading-relaxed">
-                Understanding how investors evaluate early-stage opportunities and the role of loss aversion in funding decisions.
-              </p>
-            </div>
-
-            {/* Card 5 */}
-            <div className="bg-white p-8 rounded-2xl shadow-[0_4px_24px_-8px_rgba(0,0,0,0.05)] border border-gray-100 hover:-translate-y-1 transition-transform duration-300 md:col-span-2 lg:col-span-1">
-              <div className="w-12 h-12 rounded-xl bg-slate-900 text-[#F4C542] flex items-center justify-center mb-6">
-                <Network size={24} />
-              </div>
-              <h3 className="text-xl font-bold text-slate-900 mb-3">Startup Ecosystem Decisions</h3>
-              <p className="text-gray-600 leading-relaxed">
-                The collective impact of individual risk preferences on the broader innovation and tech landscape in the region.
+                Comparing necessity vs opportunity entrepreneurship, and tracking how investors align with or differ from founders.
               </p>
             </div>
           </div>

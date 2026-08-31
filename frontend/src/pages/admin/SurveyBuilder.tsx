@@ -12,12 +12,17 @@ interface Question {
   title: string;
   options: string[];
   required: boolean;
+  dependsOn?: {
+    questionId: string;
+    expectedValue: string;
+  };
 }
 
 interface SurveyModule {
   id: string;
   title: string;
   status: string;
+  target_role?: string;
   question_count?: number;
 }
 
@@ -64,7 +69,8 @@ const SurveyBuilder: React.FC = () => {
           type: String(row.type) as 'single_choice' | 'multiple_choice' | 'short_text' | 'number_input',
           title: String(row.text || ''),
           options: (row.options as string[]) || [],
-          required: Boolean(row.required)
+          required: Boolean(row.required),
+          dependsOn: row.depends_on as { questionId: string, expectedValue: string } | undefined
         })));
       }
     } catch (err) {
@@ -212,7 +218,8 @@ const SurveyBuilder: React.FC = () => {
         type: q.type,
         options: q.options,
         order_index: index,
-        required: q.required
+        required: q.required,
+        depends_on: q.dependsOn
       }));
 
       // Also, we need the old IDs from the backend. Instead of fetching DB, we'll just send the current IDs 
@@ -293,7 +300,33 @@ const SurveyBuilder: React.FC = () => {
           <div>
             <h1 className="text-3xl font-bold text-slate-900 mb-1">Builder Canvas</h1>
             {activeModuleData ? (
-              <p className="text-gray-600 font-medium">Editing: <span className="text-slate-900">{activeModuleData.title}</span></p>
+              <div className="flex flex-col gap-2 mt-2">
+                <p className="text-gray-600 font-medium">Editing: <span className="text-slate-900">{activeModuleData.title}</span></p>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-500">Target Role:</span>
+                  <select
+                    value={activeModuleData.target_role || ''}
+                    onChange={async (e) => {
+                      const newRole = e.target.value;
+                      try {
+                        await apiFetch(`/modules/${activeModuleData.id}`, {
+                          method: 'PATCH',
+                          body: JSON.stringify({ target_role: newRole || null })
+                        });
+                        setModules(modules.map(m => m.id === activeModuleData.id ? { ...m, target_role: newRole || undefined } : m));
+                      } catch (err) {
+                        alert('Failed to update target role');
+                      }
+                    }}
+                    className="text-sm border border-gray-300 rounded px-2 py-1 outline-none focus:border-[#F4C542]"
+                  >
+                    <option value="">All (Default)</option>
+                    <option value="Founder">Founder</option>
+                    <option value="VC">VC</option>
+                    <option value="Worker">Worker</option>
+                  </select>
+                </div>
+              </div>
             ) : (
               <p className="text-gray-600 font-medium">Select a module to edit</p>
             )}
@@ -419,6 +452,48 @@ const SurveyBuilder: React.FC = () => {
                         {q.type === 'cpt_task' && <LayoutGrid size={16} />}
                       </div>
                     </div>
+                  </div>
+                </div>
+
+                {/* Conditional Logic (Depends On) */}
+                <div className="mb-6 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                  <div className="flex items-center gap-2 mb-3 text-sm font-semibold text-slate-700">
+                    <CheckSquare size={16} />
+                    <span>Skip Logic / Conditional Display</span>
+                  </div>
+                  <div className="flex flex-col sm:flex-row gap-4 items-center">
+                    <span className="text-sm text-slate-600 shrink-0">Show this question ONLY IF:</span>
+                    <select
+                      value={q.dependsOn?.questionId || ''}
+                      onChange={(e) => {
+                        const qId = e.target.value;
+                        if (!qId) {
+                          updateQuestion(q.id, { dependsOn: undefined });
+                        } else {
+                          updateQuestion(q.id, { dependsOn: { questionId: qId, expectedValue: q.dependsOn?.expectedValue || '' } });
+                        }
+                      }}
+                      className="flex-1 appearance-none rounded-lg border border-gray-300 text-sm focus:border-[#F4C542] focus:ring-[#F4C542] bg-white py-2 px-3 outline-none"
+                    >
+                      <option value="">No condition (always show)</option>
+                      {questions.filter(otherQ => otherQ.id !== q.id).map(otherQ => (
+                        <option key={otherQ.id} value={otherQ.id}>
+                          {otherQ.title.substring(0, 40)}{otherQ.title.length > 40 ? '...' : ''}
+                        </option>
+                      ))}
+                    </select>
+                    {q.dependsOn?.questionId && (
+                      <>
+                        <span className="text-sm text-slate-600 shrink-0">equals</span>
+                        <input
+                          type="text"
+                          placeholder="Expected answer..."
+                          value={q.dependsOn.expectedValue}
+                          onChange={(e) => updateQuestion(q.id, { dependsOn: { questionId: q.dependsOn!.questionId, expectedValue: e.target.value } })}
+                          className="flex-1 rounded-lg border border-gray-300 text-sm focus:border-[#F4C542] focus:ring-[#F4C542] bg-white py-2 px-3 outline-none"
+                        />
+                      </>
+                    )}
                   </div>
                 </div>
 

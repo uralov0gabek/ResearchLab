@@ -3,16 +3,19 @@ import { supabase } from '../../lib/supabase';
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
-  const { data: { session } } = await supabase.auth.getSession();
-  const token = session?.access_token;
+  const { data } = await supabase.auth.getSession();
+  const token = data?.session?.access_token;
+
+  console.log('Frontend Token Check:', token ? 'Token Exists' : 'TOKEN MISSING');
+
+  if (!token) {
+    throw new Error('User not authenticated');
+  }
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
+    'Authorization': `Bearer ${token}`
   };
-
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
 
   // Merge any custom headers provided in options
   if (options.headers) {

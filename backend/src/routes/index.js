@@ -15,6 +15,7 @@ router.post('/questions', verifyAdmin, questionController.upsertQuestions);
 // Modules
 router.get('/modules', moduleController.getModules);
 router.post('/modules', verifyAdmin, moduleController.createModule);
+router.patch('/modules/:id', verifyAdmin, moduleController.updateModule);
 router.delete('/modules/:id', verifyAdmin, moduleController.deleteModule);
 
 // CPT Tasks
