@@ -1,11 +1,11 @@
-const { supabase } = require('../config/supabase');
+const { supabaseAdmin } = require('../config/supabase');
 const { calculateRiskAversion, calculateLossAversion, extractGeneration, extractRole } = require('../utils/mathEngine');
 
 const getDashboardStats = async (req, res, next) => {
   try {
-    const { data: responses, error: respError } = await supabase.from('responses').select('*');
-    const { data: answers, error: ansError } = await supabase.from('answers').select('*');
-    const { data: modules, error: qError } = await supabase.from('survey_modules').select('id, questions(id)').eq('status', 'active');
+    const { data: responses, error: respError } = await supabaseAdmin.from('responses').select('*');
+    const { data: answers, error: ansError } = await supabaseAdmin.from('answers').select('*');
+    const { data: modules, error: qError } = await supabaseAdmin.from('survey_modules').select('id, questions(id)').eq('status', 'active');
       
     if (respError) throw respError;
     if (ansError) throw ansError;

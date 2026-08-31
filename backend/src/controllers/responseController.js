@@ -1,4 +1,4 @@
-const { supabase } = require('../config/supabase');
+const { supabaseAdmin } = require('../config/supabase');
 
 const submitResponse = async (req, res, next) => {
   try {
@@ -11,7 +11,7 @@ const submitResponse = async (req, res, next) => {
     }
 
     // Insert into responses table
-    const { error: responseError } = await supabase
+    const { error: responseError } = await supabaseAdmin
       .from('responses')
       .insert({
         user_id: userId || null,
@@ -24,13 +24,13 @@ const submitResponse = async (req, res, next) => {
 
     res.json({ success: true });
   } catch (error) {
-    next(error);
+    return res.status(400).json({ error: error.message || 'Database error' });
   }
 };
 
 const getResponses = async (req, res, next) => {
   try {
-    const { data: responses, error: respError } = await supabase
+    const { data: responses, error: respError } = await supabaseAdmin
       .from('responses')
       .select('*')
       .order('completed_at', { ascending: false, nullsFirst: false });
@@ -56,7 +56,7 @@ const getResponses = async (req, res, next) => {
 
     res.json({ responses: processed });
   } catch (error) {
-    next(error);
+    return res.status(400).json({ error: error.message || 'Database error' });
   }
 };
 
