@@ -1,4 +1,4 @@
-const { supabase } = require('../config/supabase');
+const { supabase, supabaseAdmin } = require('../config/supabase');
 
 const getCptTasks = async (req, res, next) => {
   try {
@@ -24,7 +24,7 @@ const createCptTask = async (req, res, next) => {
       throw error;
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('cpt_tasks')
       .insert([{
         title,
@@ -40,7 +40,8 @@ const createCptTask = async (req, res, next) => {
     if (error) throw error;
     res.json(data);
   } catch (error) {
-    next(error);
+    console.error("CPT Task Save Error:", error);
+    return res.status(400).json({ error: error.message || "Failed to save CPT task" });
   }
 };
 
