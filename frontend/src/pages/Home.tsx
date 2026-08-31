@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { TrendingUp, AlertTriangle, Lightbulb, Briefcase, Network, ArrowRight } from 'lucide-react';
+import { TrendingUp, AlertTriangle, Lightbulb, ArrowRight } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 const Home: React.FC = () => {
