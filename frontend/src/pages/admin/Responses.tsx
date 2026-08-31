@@ -1,18 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { apiFetch } from '../../services/api/apiClient';
-import { Loader2, Search, Eye } from 'lucide-react';
+import { Loader2, Search, Download } from 'lucide-react';
 
 interface ProcessedResponse {
   id: string;
-  session_id: string;
+  user_id: string | null;
   date: string;
-  generation: string;
-  role: string;
   alpha: string;
   beta: string;
   lambda: string;
-  gamma: string;
-  delta: string;
 }
 
 const Responses: React.FC = () => {
@@ -37,12 +33,23 @@ const Responses: React.FC = () => {
     fetchData();
   }, []);
 
-
+  const handleExportCSV = () => {
+    if (responsesData.length === 0) return;
+    const headers = ['ID', 'User ID', 'Date', 'Alpha', 'Beta', 'Lambda'];
+    const csvContent = "data:text/csv;charset=utf-8," 
+      + headers.join(",") + "\n"
+      + responsesData.map(r => `${r.id},${r.user_id || 'Anonymous'},${r.date},${r.alpha},${r.beta},${r.lambda}`).join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "survey_responses.csv");
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  };
 
   const filteredResponses = responsesData.filter((row) => 
-    row.session_id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    row.role.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    row.generation.toLowerCase().includes(searchQuery.toLowerCase())
+    row.id.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -53,23 +60,32 @@ const Responses: React.FC = () => {
           <p className="text-sm text-slate-500 mt-1">View and analyze individual survey submissions.</p>
         </div>
         
-        <div className="relative w-full md:w-72">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search className="h-4 w-4 text-slate-400" />
+        <div className="flex items-center gap-4 w-full md:w-auto">
+          <div className="relative w-full md:w-72">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search className="h-4 w-4 text-slate-400" />
+            </div>
+            <input
+              type="text"
+              className="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              placeholder="Search by ID..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
           </div>
-          <input
-            type="text"
-            className="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#F4C542] focus:border-transparent transition-all"
-            placeholder="Search by ID or Role..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
+          <button 
+            onClick={handleExportCSV}
+            className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors"
+          >
+            <Download size={16} />
+            <span className="hidden sm:inline">Export CSV</span>
+          </button>
         </div>
       </div>
       
       {loading ? (
         <div className="flex flex-col items-center justify-center p-12 min-h-[400px]">
-          <Loader2 className="w-8 h-8 animate-spin text-[#F4C542] mb-4" />
+          <Loader2 className="w-8 h-8 animate-spin text-blue-500 mb-4" />
           <p className="text-slate-500 font-medium">Loading responses...</p>
         </div>
       ) : filteredResponses.length === 0 ? (
@@ -86,45 +102,26 @@ const Responses: React.FC = () => {
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200">
                 <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Session ID</th>
+                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">User ID</th>
                 <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Date</th>
-                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Generation</th>
-                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Role</th>
                 <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">α</th>
                 <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">β</th>
                 <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">λ</th>
-                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">γ</th>
-                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">δ</th>
-                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {filteredResponses.map((row) => (
                 <tr key={row.id} className="hover:bg-slate-50 transition-colors group">
-                  <td className="px-6 py-4 text-sm font-mono text-slate-500 max-w-[120px] truncate" title={row.session_id}>
-                    {row.session_id}
+                  <td className="px-6 py-4 text-sm font-mono text-slate-500 max-w-[120px] truncate" title={row.id}>
+                    {row.id}
+                  </td>
+                  <td className="px-6 py-4 text-sm font-mono text-slate-500">
+                    {row.user_id || 'Anonymous'}
                   </td>
                   <td className="px-6 py-4 text-sm text-slate-700 font-medium">{row.date}</td>
-                  <td className="px-6 py-4 text-sm">
-                    <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-100">
-                      {row.generation}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-sm">
-                    <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-100">
-                      {row.role}
-                    </span>
-                  </td>
                   <td className="px-6 py-4 text-sm text-slate-700">{row.alpha}</td>
                   <td className="px-6 py-4 text-sm text-slate-700">{row.beta}</td>
                   <td className="px-6 py-4 text-sm text-slate-700">{row.lambda}</td>
-                  <td className="px-6 py-4 text-sm text-slate-700">{row.gamma}</td>
-                  <td className="px-6 py-4 text-sm text-slate-700">{row.delta}</td>
-                  <td className="px-6 py-4 text-sm text-right">
-                    <button aria-label="View Details" className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors inline-flex items-center gap-1.5" title="View Details">
-                      <Eye className="w-4 h-4" />
-                      <span className="sr-only md:not-sr-only md:text-xs md:font-medium">View</span>
-                    </button>
-                  </td>
                 </tr>
               ))}
             </tbody>

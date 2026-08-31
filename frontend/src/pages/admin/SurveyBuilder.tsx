@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Plus, Trash2, Copy, ArrowUp, ArrowDown, Save, AlignLeft, List, Hash, LayoutGrid, CheckSquare, Loader2
+  Plus, Trash2, ArrowUp, ArrowDown, Save, CheckSquare, Loader2, LayoutGrid
 } from 'lucide-react';
 import { apiFetch } from '../../services/api/apiClient';
 
-type QuestionType = 'single_choice' | 'multiple_choice' | 'short_text' | 'number_input' | 'cpt_task';
+type QuestionType = 'single_choice' | 'multiple_choice' | 'short_text' | 'number_input' | 'lottery';
 
 interface Question {
   id: string;
+  block_name: string;
   type: QuestionType;
   title: string;
-  options: string[];
+  options: any; // Can be string[] or for lottery: { gambleAAmount, gambleAProb, gambleBAmount, gambleBProb } etc.
   required: boolean;
   dependsOn?: {
     questionId: string;
@@ -18,126 +19,61 @@ interface Question {
   };
 }
 
-interface SurveyModule {
-  id: string;
-  title: string;
-  status: string;
-  target_role?: string;
-  question_count?: number;
-}
-
 const SurveyBuilder: React.FC = () => {
-  const [modules, setModules] = useState<SurveyModule[]>([]);
-  const [activeModule, setActiveModule] = useState<string | null>(null);
-  
   const [questions, setQuestions] = useState<Question[]>([]);
-  const [isLoadingModules, setIsLoadingModules] = useState(true);
-  const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
+  const [activeBlock, setActiveBlock] = useState<string | null>(null);
+  
+  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
-  const fetchModules = async () => {
-    setIsLoadingModules(true);
+  const fetchQuestions = async () => {
     try {
-      const data = await apiFetch('/modules');
-      
-      const formattedModules = data?.map((m: Record<string, unknown>) => ({
-        ...m,
-        question_count: (m.questions as { count: number }[])?.[0]?.count || 0
-      })) || [];
-      
-      setModules(formattedModules);
-      
-      if (formattedModules.length > 0 && !activeModule) {
-        setActiveModule(formattedModules[0].id);
-      }
-    } catch (err) {
-      console.error('Error fetching modules:', err);
-      alert('Failed to load modules.');
-    } finally {
-      setIsLoadingModules(false);
-    }
-  };
-
-  const fetchQuestions = async (moduleId: string) => {
-    try {
-      setIsLoadingQuestions(true);
-      const data = await apiFetch(`/questions?module_id=${moduleId}`);
+      setIsLoading(true);
+      const data = await apiFetch(`/questions`);
       
       if (data) {
-        setQuestions(data.map((row: Record<string, unknown>) => ({
+        const loadedQuestions = data.map((row: any) => ({
           id: String(row.id),
-          type: String(row.type) as 'single_choice' | 'multiple_choice' | 'short_text' | 'number_input',
-          title: String(row.text || ''),
-          options: (row.options as string[]) || [],
+          block_name: String(row.block_name || 'Default Block'),
+          type: String(row.type) as QuestionType,
+          title: String(row.question_text || ''),
+          options: row.options || [],
           required: Boolean(row.required),
-          dependsOn: row.depends_on as { questionId: string, expectedValue: string } | undefined
-        })));
+          dependsOn: row.conditional_logic as { questionId: string, expectedValue: string } | undefined
+        }));
+        setQuestions(loadedQuestions);
+        
+        // Extract unique blocks
+        const blocks = Array.from(new Set(loadedQuestions.map((q: Question) => q.block_name)));
+        if (blocks.length > 0 && !activeBlock) {
+          setActiveBlock(blocks[0] as string);
+        }
       }
     } catch (err) {
       console.error('Error fetching questions:', err);
       alert('Failed to load questions.');
     } finally {
-      setIsLoadingQuestions(false);
+      setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchModules();
+    fetchQuestions();
   }, []);
 
-  useEffect(() => {
-    if (activeModule) {
-      fetchQuestions(activeModule);
-    } else {
-      setQuestions([]);
-    }
-  }, [activeModule]);
+  const uniqueBlocks = Array.from(new Set(questions.map(q => q.block_name)));
 
-
-
-  const handleDeleteModule = async (e: React.MouseEvent, moduleId: string) => {
-    e.stopPropagation();
-    
-    if (window.confirm('Are you sure you want to delete this module? All questions inside it will also be deleted.')) {
-      try {
-        await apiFetch(`/modules/${moduleId}`, { method: 'DELETE' });
-        
-        if (activeModule === moduleId) {
-          setActiveModule(null);
-        }
-        
-        fetchModules();
-      } catch (err) {
-        console.error('Error deleting module:', err);
-        alert('Failed to delete module.');
-      }
-    }
-  };
-
-  const addModule = async () => {
-    const title = prompt("Enter new module title:");
+  const handleAddBlock = () => {
+    const title = prompt("Enter new block name:");
     if (!title) return;
-    try {
-      const data = await apiFetch('/modules', {
-        method: 'POST',
-        body: JSON.stringify({ title, status: 'draft' })
-      });
-      
-      await fetchModules();
-      
-      if (data) {
-        setActiveModule(data.id);
-      }
-    } catch (err: any) {
-      const errorMsg = err.response?.data?.error || err.message || 'Unknown error';
-      console.error("ADD_MODULE_ERROR:", errorMsg);
-      alert(`Failed to add module: ${errorMsg}`);
-    }
+    setActiveBlock(title);
   };
 
   const addQuestion = () => {
+    if (!activeBlock) return;
     const newQ: Question = {
       id: crypto.randomUUID(),
+      block_name: activeBlock,
       type: 'single_choice',
       title: '',
       options: ['Option 1'],
@@ -154,34 +90,26 @@ const SurveyBuilder: React.FC = () => {
     setQuestions(questions.filter(q => q.id !== id));
   };
 
-  const duplicateQuestion = (index: number) => {
-    const qToDuplicate = questions[index];
-    const newQ: Question = {
-      ...qToDuplicate,
-      id: crypto.randomUUID(),
-      title: qToDuplicate.title + ' (Copy)'
-    };
-    const newQuestions = [...questions];
-    newQuestions.splice(index + 1, 0, newQ);
-    setQuestions(newQuestions);
-  };
+  const activeBlockQuestions = questions.filter(q => q.block_name === activeBlock);
 
   const moveQuestion = (index: number, direction: 'up' | 'down') => {
     if (direction === 'up' && index === 0) return;
-    if (direction === 'down' && index === questions.length - 1) return;
+    if (direction === 'down' && index === activeBlockQuestions.length - 1) return;
     
     const newQuestions = [...questions];
-    const swapIndex = direction === 'up' ? index - 1 : index + 1;
+    // Find absolute index in main array
+    const absoluteIndex = questions.findIndex(q => q.id === activeBlockQuestions[index].id);
+    const swapAbsoluteIndex = questions.findIndex(q => q.id === activeBlockQuestions[direction === 'up' ? index - 1 : index + 1].id);
     
     // Swap
-    [newQuestions[index], newQuestions[swapIndex]] = [newQuestions[swapIndex], newQuestions[index]];
+    [newQuestions[absoluteIndex], newQuestions[swapAbsoluteIndex]] = [newQuestions[swapAbsoluteIndex], newQuestions[absoluteIndex]];
     setQuestions(newQuestions);
   };
 
   const addOption = (qId: string) => {
     setQuestions(questions.map(q => {
       if (q.id === qId) {
-        return { ...q, options: [...q.options, `Option ${q.options.length + 1}`] };
+        return { ...q, options: Array.isArray(q.options) ? [...q.options, `Option ${q.options.length + 1}`] : ['Option 1'] };
       }
       return q;
     }));
@@ -189,7 +117,7 @@ const SurveyBuilder: React.FC = () => {
 
   const updateOption = (qId: string, index: number, value: string) => {
     setQuestions(questions.map(q => {
-      if (q.id === qId) {
+      if (q.id === qId && Array.isArray(q.options)) {
         const newOptions = [...q.options];
         newOptions[index] = value;
         return { ...q, options: newOptions };
@@ -200,7 +128,7 @@ const SurveyBuilder: React.FC = () => {
 
   const removeOption = (qId: string, index: number) => {
     setQuestions(questions.map(q => {
-      if (q.id === qId) {
+      if (q.id === qId && Array.isArray(q.options)) {
         const newOptions = q.options.filter((_, i) => i !== index);
         return { ...q, options: newOptions };
       }
@@ -209,26 +137,20 @@ const SurveyBuilder: React.FC = () => {
   };
 
   const handleSave = async () => {
-    if (!activeModule) return;
     setIsSaving(true);
     try {
       const questionsToUpsert = questions.map((q, index) => ({
         id: q.id,
-        module_id: activeModule,
-        text: q.title,
+        block_name: q.block_name,
+        question_text: q.title,
         type: q.type,
         options: q.options,
         order_index: index,
         required: q.required,
-        depends_on: q.dependsOn
+        conditional_logic: q.dependsOn
       }));
 
-      // Also, we need the old IDs from the backend. Instead of fetching DB, we'll just send the current IDs 
-      // but wait, to delete old ones, we can just send the current ones and let backend handle it, or send all current IDs 
-      // Actually, my backend code takes `idsToDelete` explicitly, so we must fetch old IDs or change backend logic.
-      // Easiest is to fetch existing questions first:
-      const dbQuestions = await apiFetch(`/questions?module_id=${activeModule}`);
-      
+      const dbQuestions = await apiFetch(`/questions`);
       const currentIds = new Set(questions.map(q => q.id));
       const idsToDelete = dbQuestions?.filter((q: { id: string }) => !currentIds.has(q.id)).map((q: { id: string }) => q.id) || [];
 
@@ -238,58 +160,48 @@ const SurveyBuilder: React.FC = () => {
       });
 
       alert('Saved successfully!');
-      fetchModules(); // Refresh modules to update question counts
+      fetchQuestions(); 
     } catch (error) {
-      console.error('Supabase Error:', error);
+      console.error('Save Error:', error);
       alert('Failed to save questions.');
     } finally {
       setIsSaving(false);
     }
   };
 
-  const activeModuleData = modules.find(m => m.id === activeModule);
-
   return (
     <div className="flex flex-col md:flex-row w-full min-h-[calc(100vh-4rem)] bg-[#FFFDF5] text-slate-800 font-sans">
       {/* Left Column (Sidebar) */}
       <div className="w-full md:w-1/4 bg-[#FFFDF5] border-b md:border-b-0 md:border-r border-gray-200 p-6 flex flex-col">
-        <h2 className="text-xl font-bold mb-6 text-slate-900">Survey Modules</h2>
+        <h2 className="text-xl font-bold mb-6 text-slate-900">Survey Blocks</h2>
         <div className="space-y-3">
-          {isLoadingModules ? (
+          {isLoading ? (
             <div className="flex justify-center py-4"><Loader2 className="animate-spin text-slate-400" size={24} /></div>
-          ) : modules.length === 0 ? (
+          ) : uniqueBlocks.length === 0 ? (
             <div className="text-center py-8 text-sm text-gray-500">
-              No modules found.<br />
+              No blocks found.<br />
             </div>
           ) : (
-            modules.map(mod => (
+            uniqueBlocks.map(block => (
               <div 
-                key={mod.id}
-                onClick={() => setActiveModule(mod.id)}
-                className={`p-4 rounded-xl cursor-pointer transition-all flex justify-between items-start group ${activeModule === mod.id ? 'bg-white border border-gray-200 shadow-sm border-l-4 border-l-[#F4C542]' : 'hover:bg-white border border-transparent hover:border-gray-200'}`}
+                key={block}
+                onClick={() => setActiveBlock(block)}
+                className={`p-4 rounded-xl cursor-pointer transition-all flex justify-between items-start group ${activeBlock === block ? 'bg-white border border-gray-200 shadow-sm border-l-4 border-l-[#F4C542]' : 'hover:bg-white border border-transparent hover:border-gray-200'}`}
               >
                 <div>
-                  <h3 className={`font-semibold ${activeModule === mod.id ? 'text-slate-800' : 'text-slate-700'}`}>{mod.title}</h3>
+                  <h3 className={`font-semibold ${activeBlock === block ? 'text-slate-800' : 'text-slate-700'}`}>{block}</h3>
                   <p className="text-xs text-gray-500 mt-1.5 flex items-center gap-2">
-                    <span className={`w-2 h-2 rounded-full ${mod.status === 'active' ? 'bg-green-500' : 'bg-gray-300'}`}></span> {mod.status === 'active' ? 'Active' : 'Draft'} • {activeModule === mod.id ? questions.length : mod.question_count} Questions
+                    {questions.filter(q => q.block_name === block).length} Questions
                   </p>
                 </div>
-                <button 
-                  onClick={(e) => handleDeleteModule(e, mod.id)}
-                  className="text-gray-300 hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity rounded-md hover:bg-red-50"
-                  title="Delete Module"
-                  aria-label="Delete Module"
-                >
-                  <Trash2 size={16} />
-                </button>
               </div>
             ))
           )}
           <button 
-            onClick={addModule} 
+            onClick={handleAddBlock} 
             className="w-full mt-4 py-3 border-2 border-dashed border-gray-200 rounded-xl text-gray-500 font-medium hover:border-[#F4C542] hover:text-[#c79a20] transition-colors flex items-center justify-center gap-2"
           >
-            <Plus size={18} /> Add Module
+            <Plus size={18} /> Add Block
           </button>
         </div>
       </div>
@@ -300,70 +212,38 @@ const SurveyBuilder: React.FC = () => {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 max-w-4xl mx-auto">
           <div>
             <h1 className="text-3xl font-bold text-slate-900 mb-1">Builder Canvas</h1>
-            {activeModuleData ? (
-              <div className="flex flex-col gap-2 mt-2">
-                <p className="text-gray-600 font-medium">Editing: <span className="text-slate-900">{activeModuleData.title}</span></p>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-500">Target Role:</span>
-                  <select
-                    value={activeModuleData.target_role || ''}
-                    onChange={async (e) => {
-                      const newRole = e.target.value;
-                      try {
-                        await apiFetch(`/modules/${activeModuleData.id}`, {
-                          method: 'PATCH',
-                          body: JSON.stringify({ target_role: newRole || null })
-                        });
-                        setModules(modules.map(m => m.id === activeModuleData.id ? { ...m, target_role: newRole || undefined } : m));
-                      } catch (err) {
-                        alert('Failed to update target role');
-                      }
-                    }}
-                    className="text-sm border border-gray-300 rounded px-2 py-1 outline-none focus:border-[#F4C542]"
-                  >
-                    <option value="">All (Default)</option>
-                    <option value="Founder">Founder</option>
-                    <option value="VC">VC</option>
-                    <option value="Worker">Worker</option>
-                  </select>
-                </div>
-              </div>
+            {activeBlock ? (
+              <p className="text-gray-600 font-medium">Editing: <span className="text-slate-900">{activeBlock}</span></p>
             ) : (
-              <p className="text-gray-600 font-medium">Select a module to edit</p>
+              <p className="text-gray-600 font-medium">Select a block to edit</p>
             )}
           </div>
           <button 
             onClick={handleSave}
-            disabled={isSaving || isLoadingQuestions || !activeModule}
+            disabled={isSaving || isLoading}
             className={`flex items-center gap-2 px-6 py-2.5 rounded-lg transition-colors shadow-md font-medium shrink-0 ${
-              isSaving || isLoadingQuestions || !activeModule ? 'bg-slate-700 text-slate-300 cursor-not-allowed' : 'bg-slate-900 text-white hover:bg-slate-800'
+              isSaving || isLoading ? 'bg-slate-700 text-slate-300 cursor-not-allowed' : 'bg-slate-900 text-white hover:bg-slate-800'
             }`}
           >
             {isSaving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
-            {isSaving ? 'Saving...' : 'Publish / Save Changes'}
+            {isSaving ? 'Saving...' : 'Save Changes'}
           </button>
         </div>
         
         {/* Questions */}
         <div className="space-y-6 max-w-4xl mx-auto pb-12">
-          {!activeModule ? (
+          {!activeBlock ? (
             <div className="text-center py-20 bg-white rounded-2xl border border-gray-200 shadow-sm">
-              <h3 className="text-xl font-semibold text-slate-700 mb-2">No module selected</h3>
-              <p className="text-gray-500 mb-6">Please select a module from the sidebar or create a new one.</p>
+              <h3 className="text-xl font-semibold text-slate-700 mb-2">No block selected</h3>
+              <p className="text-gray-500 mb-6">Please select a block from the sidebar or create a new one.</p>
             </div>
-          ) : isLoadingQuestions ? (
-            <div className="flex flex-col items-center justify-center py-20 text-slate-500">
-              <Loader2 className="w-10 h-10 animate-spin mb-4 text-[#F4C542]" />
-              <p className="font-medium text-lg">Loading questions...</p>
-            </div>
-          ) : questions.length === 0 ? (
+          ) : activeBlockQuestions.length === 0 ? (
             <div className="text-center py-20 bg-white rounded-2xl border border-gray-200 shadow-sm">
               <h3 className="text-xl font-semibold text-slate-700 mb-2">No questions yet</h3>
               <p className="text-gray-500 mb-6">Start building your survey by adding a new question below.</p>
             </div>
-          ) : questions.map((q, index) => (
+          ) : activeBlockQuestions.map((q, index) => (
             <div key={q.id} className="bg-white rounded-2xl shadow-sm border border-gray-200/80 overflow-hidden transition-all hover:shadow-md">
-              {/* Card Header & Actions */}
               <div className="flex items-center justify-between p-4 bg-gray-50/50 border-b border-gray-100">
                 <div className="flex items-center gap-3">
                   <span className="flex items-center justify-center w-6 h-6 rounded-full bg-slate-200 text-slate-700 text-xs font-bold">
@@ -386,41 +266,26 @@ const SurveyBuilder: React.FC = () => {
                     onClick={() => moveQuestion(index, 'up')}
                     disabled={index === 0}
                     className="p-1.5 text-gray-400 hover:text-slate-700 hover:bg-slate-100 rounded-md transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
-                    title="Move Up"
-                    aria-label="Move Up"
                   >
                     <ArrowUp size={16} />
                   </button>
                   <button 
                     onClick={() => moveQuestion(index, 'down')}
-                    disabled={index === questions.length - 1}
+                    disabled={index === activeBlockQuestions.length - 1}
                     className="p-1.5 text-gray-400 hover:text-slate-700 hover:bg-slate-100 rounded-md transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
-                    title="Move Down"
-                    aria-label="Move Down"
                   >
                     <ArrowDown size={16} />
                   </button>
                   <div className="w-px h-4 bg-gray-300 mx-1"></div>
                   <button 
-                    onClick={() => duplicateQuestion(index)}
-                    className="p-1.5 text-gray-400 hover:text-slate-700 hover:bg-slate-100 rounded-md transition-colors"
-                    title="Duplicate"
-                    aria-label="Duplicate Question"
-                  >
-                    <Copy size={16} />
-                  </button>
-                  <button 
                     onClick={() => removeQuestion(q.id)}
                     className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
-                    title="Delete"
-                    aria-label="Delete Question"
                   >
                     <Trash2 size={16} />
                   </button>
                 </div>
               </div>
 
-              {/* Card Body */}
               <div className="p-6">
                 <div className="flex flex-col md:flex-row gap-6 mb-6">
                   <div className="flex-1">
@@ -433,30 +298,20 @@ const SurveyBuilder: React.FC = () => {
                     />
                   </div>
                   <div className="w-full md:w-56 shrink-0">
-                    <div className="relative">
-                      <select
-                        value={q.type}
-                        onChange={(e) => updateQuestion(q.id, { type: e.target.value as QuestionType })}
-                        className="w-full appearance-none rounded-xl border border-gray-200 text-sm focus:border-[#F4C542] focus:ring-[#F4C542] bg-white py-2.5 pl-9 pr-8 outline-none shadow-sm font-medium text-slate-700 cursor-pointer"
-                      >
-                        <option value="single_choice">Single Choice</option>
-                        <option value="multiple_choice">Multiple Choice</option>
-                        <option value="short_text">Short Text</option>
-                        <option value="number_input">Number Input</option>
-                        <option value="cpt_task">Structured CPT Task</option>
-                      </select>
-                      <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
-                        {q.type === 'single_choice' && <CheckSquare size={16} />}
-                        {q.type === 'multiple_choice' && <List size={16} />}
-                        {q.type === 'short_text' && <AlignLeft size={16} />}
-                        {q.type === 'number_input' && <Hash size={16} />}
-                        {q.type === 'cpt_task' && <LayoutGrid size={16} />}
-                      </div>
-                    </div>
+                    <select
+                      value={q.type}
+                      onChange={(e) => updateQuestion(q.id, { type: e.target.value as QuestionType })}
+                      className="w-full appearance-none rounded-xl border border-gray-200 text-sm focus:border-[#F4C542] focus:ring-[#F4C542] bg-white py-2.5 pl-3 pr-8 outline-none shadow-sm font-medium text-slate-700 cursor-pointer"
+                    >
+                      <option value="single_choice">Single Choice</option>
+                      <option value="multiple_choice">Multiple Choice</option>
+                      <option value="short_text">Short Text</option>
+                      <option value="number_input">Number Input</option>
+                      <option value="lottery">Lottery Choice (CPT)</option>
+                    </select>
                   </div>
                 </div>
 
-                {/* Conditional Logic (Depends On) */}
                 <div className="mb-6 bg-slate-50 p-4 rounded-xl border border-slate-200">
                   <div className="flex items-center gap-2 mb-3 text-sm font-semibold text-slate-700">
                     <CheckSquare size={16} />
@@ -498,11 +353,10 @@ const SurveyBuilder: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Dynamic Content based on Question Type */}
                 <div className="pl-0 md:pl-2">
-                  {(q.type === 'single_choice' || q.type === 'multiple_choice') && (
+                  {(q.type === 'single_choice' || q.type === 'multiple_choice') && Array.isArray(q.options) && (
                     <div className="space-y-3">
-                      {q.options.map((opt, optIndex) => (
+                      {q.options.map((opt: string, optIndex: number) => (
                         <div key={optIndex} className="flex items-center gap-3 group/opt">
                           <div className={`w-4 h-4 border-2 border-gray-300 ${q.type === 'single_choice' ? 'rounded-full' : 'rounded'} flex-shrink-0`} />
                           <input
@@ -516,8 +370,6 @@ const SurveyBuilder: React.FC = () => {
                             onClick={() => removeOption(q.id, optIndex)}
                             className="text-gray-300 hover:text-red-400 p-1 opacity-0 group-hover/opt:opacity-100 transition-opacity"
                             disabled={q.options.length <= 1}
-                            title="Remove option"
-                            aria-label="Remove option"
                           >
                             <Trash2 size={16} />
                           </button>
@@ -547,15 +399,31 @@ const SurveyBuilder: React.FC = () => {
                     </div>
                   )}
 
-                  {q.type === 'cpt_task' && (
+                  {q.type === 'lottery' && (
                     <div className="bg-[#FFFDF5] p-5 rounded-xl border border-[#F4C542]/30 mt-4 shadow-inner">
                       <div className="flex items-center gap-3 mb-2">
                         <LayoutGrid className="text-[#F4C542]" size={20} />
-                        <h4 className="font-semibold text-slate-800">Cumulative Prospect Theory Module</h4>
+                        <h4 className="font-semibold text-slate-800">Cumulative Prospect Theory Lottery</h4>
                       </div>
-                      <p className="text-sm text-slate-600 leading-relaxed">
-                        This module will present participants with a series of structured lotteries (e.g., "50% chance to win $100 vs. 100% chance to win $40"). Parameters for the CPT task can be configured in the global settings.
+                      <p className="text-sm text-slate-600 leading-relaxed mb-4">
+                        Define the rows for the A/B choices. For example: "50% chance to win X and 50% chance to win Y."
+                        <br />You should define this in JSON format for the options field, e.g.:
                       </p>
+                      <textarea
+                         value={typeof q.options === 'string' ? q.options : JSON.stringify(q.options, null, 2)}
+                         onChange={(e) => {
+                           try {
+                             const parsed = JSON.parse(e.target.value);
+                             updateQuestion(q.id, { options: parsed });
+                           } catch {
+                             updateQuestion(q.id, { options: e.target.value });
+                           }
+                         }}
+                         className="w-full font-mono text-sm h-32 p-3 rounded border border-gray-300"
+                         placeholder={`[
+  { "sureAmount": 200000, "gamble": "50% chance to win 1500000 UZS or 0 UZS" }
+]`}
+                      />
                     </div>
                   )}
                 </div>
@@ -563,8 +431,7 @@ const SurveyBuilder: React.FC = () => {
             </div>
           ))}
 
-          {/* Add Button */}
-          {activeModule && (
+          {activeBlock && (
             <button 
               onClick={addQuestion}
               className="w-full py-6 border-2 border-dashed border-[#F4C542] bg-[#F4C542]/5 hover:bg-[#F4C542]/10 rounded-2xl text-[#c79a20] font-bold hover:text-[#a8821b] hover:border-[#d4a832] transition-all flex items-center justify-center gap-2 shadow-sm mt-4"

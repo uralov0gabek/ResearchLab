@@ -5,38 +5,28 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { apiFetch } from '../services/api/apiClient';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
-import CPTQuestionCard from '../components/CPTQuestionCard';
+import CPTQuestionCard, { type LotteryRow } from '../components/CPTQuestionCard';
 
-// Mock Data
-type QuestionType = 'short_text' | 'single_choice' | 'multiple_choice' | 'number_input' | 'cpt_task';
+type QuestionType = 'short_text' | 'single_choice' | 'multiple_choice' | 'number_input' | 'lottery';
 
 interface Question {
   id: string;
   type: QuestionType;
   text: string;
-  options?: string[];
+  block_name: string;
+  options?: any;
   dependsOn?: {
     questionId: string;
     expectedValue: string;
   };
-  target_role?: string;
-  cptData?: {
-    sureAmount: number;
-    gambleAmount1: number;
-    prob1: number;
-    gambleAmount2: number;
-    prob2: number;
-  };
 }
-
-// MOCK_QUESTIONS removed, using Supabase
 
 const STORAGE_KEY = 'survey_session_data';
 
 const PublicSurvey: React.FC = () => {
   const [sessionId, setSessionId] = useState<string>('');
   const [currentStep, setCurrentStep] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, string | number | string[]>>({});
+  const [answers, setAnswers] = useState<Record<string, any>>({});
   const [questions, setQuestions] = useState<Question[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
@@ -45,41 +35,22 @@ const PublicSurvey: React.FC = () => {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  // Fetch questions from Supabase
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
         setIsLoading(true);
-        const [questionsData, cptTasksData] = await Promise.all([
-          apiFetch('/questions').catch(() => []),
-          apiFetch('/cpt-tasks').catch(() => [])
-        ]);
+        const data = await apiFetch('/questions').catch(() => []);
         
         let allQuestions: Question[] = [];
-
-        if (Array.isArray(questionsData)) {
-          const mappedData = questionsData.map((q: any) => ({
-            ...q,
-            text: String(q.title || q.text || ''),
-            target_role: q.survey_modules?.target_role
-          })) as Question[];
-          allQuestions = [...allQuestions, ...mappedData];
-        }
-
-        if (Array.isArray(cptTasksData)) {
-          const mappedCpt = cptTasksData.map((task: Record<string, unknown>) => ({
-            id: `cpt_${task.id}`,
-            type: 'cpt_task' as QuestionType,
-            text: String(task.title),
-            cptData: {
-              sureAmount: Number(task.sure_amount),
-              gambleAmount1: Number(task.gamble_a_amount),
-              prob1: Number(task.gamble_a_prob),
-              gambleAmount2: Number(task.gamble_b_amount),
-              prob2: Number(task.gamble_b_prob),
-            }
+        if (Array.isArray(data)) {
+          allQuestions = data.map((q: any) => ({
+            id: String(q.id),
+            type: q.type as QuestionType,
+            text: q.question_text || '',
+            block_name: q.block_name || '',
+            options: q.options,
+            dependsOn: q.conditional_logic
           }));
-          allQuestions = [...allQuestions, ...mappedCpt];
         }
 
         setQuestions(allQuestions);
@@ -92,7 +63,6 @@ const PublicSurvey: React.FC = () => {
     fetchQuestions();
   }, []);
 
-  // Load state from sessionStorage
   useEffect(() => {
     const cached = sessionStorage.getItem(STORAGE_KEY);
     if (cached) {
@@ -109,9 +79,8 @@ const PublicSurvey: React.FC = () => {
     }
   }, []);
 
-  // Save state to sessionStorage
   useEffect(() => {
-    if (sessionId) { // Only save once sessionId is initialized
+    if (sessionId) { 
       sessionStorage.setItem(STORAGE_KEY, JSON.stringify({
         sessionId,
         currentStep,
@@ -125,27 +94,13 @@ const PublicSurvey: React.FC = () => {
     navigate('/');
   };
 
-  const currentRole = useMemo(() => {
-    for (const key in answers) {
-      const val = answers[key];
-      if (val === 'Founder' || val === 'VC' || val === 'Worker' || val === 'Investor') {
-        return val === 'Investor' ? 'VC' : val;
-      }
-    }
-    return null;
-  }, [answers]);
-
   const visibleQuestions = useMemo(() => {
     return questions.filter(q => {
-      if (q.target_role && currentRole && q.target_role !== currentRole) {
-        return false;
-      }
-
       if (!q.dependsOn) return true;
       const dependentAnswer = answers[q.dependsOn.questionId];
       return dependentAnswer === q.dependsOn.expectedValue;
     });
-  }, [answers, questions, currentRole]);
+  }, [answers, questions]);
 
   useEffect(() => {
     if (visibleQuestions.length > 0 && currentStep >= visibleQuestions.length) {
@@ -153,7 +108,7 @@ const PublicSurvey: React.FC = () => {
     }
   }, [visibleQuestions, currentStep]);
 
-  const handleAnswerChange = (questionId: string, value: string | number | string[]) => {
+  const handleAnswerChange = (questionId: string, value: any) => {
     setAnswers(prev => ({ ...prev, [questionId]: value }));
   };
 
@@ -173,23 +128,11 @@ const PublicSurvey: React.FC = () => {
     setIsSubmitting(true);
     setSubmitError(null);
     try {
-      // Look for an email in the answers (assuming question text contains "email")
-      let email = undefined;
-      const cleanAnswers = { ...answers };
-      
-      for (const q of questions) {
-        if (q.text.toLowerCase().includes('email') && answers[q.id]) {
-          email = answers[q.id] as string;
-          delete cleanAnswers[q.id]; // Remove from answers to keep it detached in DB
-        }
-      }
-
       await apiFetch('/responses', {
         method: 'POST',
-        body: JSON.stringify({ sessionId, answers: cleanAnswers, email })
+        body: JSON.stringify({ userId: sessionId, answers })
       });
 
-      // Success
       sessionStorage.removeItem(STORAGE_KEY);
       setIsSubmitted(true);
     } catch (err: unknown) {
@@ -202,7 +145,6 @@ const PublicSurvey: React.FC = () => {
 
   const question = visibleQuestions[currentStep];
 
-  // Validation
   let isCurrentAnswerValid = false;
   let validationError = '';
   const answer = answers[question?.id];
@@ -211,22 +153,21 @@ const PublicSurvey: React.FC = () => {
     isCurrentAnswerValid = typeof answer === 'string' && answer.trim().length > 0;
   } else if (question?.type === 'number_input') {
     isCurrentAnswerValid = typeof answer === 'string' && answer.trim().length > 0;
-    if (isCurrentAnswerValid) {
-      const age = parseInt(String(answer), 10);
-      if (isNaN(age) || age < 18 || age > 120) {
-        isCurrentAnswerValid = false;
-        validationError = 'Please enter a valid age between 18 and 120.';
-      }
-    }
-  } else if (question?.type === 'single_choice' || question?.type === 'cpt_task') {
+  } else if (question?.type === 'single_choice') {
     isCurrentAnswerValid = !!answer;
   } else if (question?.type === 'multiple_choice') {
     isCurrentAnswerValid = Array.isArray(answer) && answer.length > 0;
+  } else if (question?.type === 'lottery') {
+    // For lottery, must select A or B for all rows
+    if (answer && answer.choices) {
+      const rows = question.options as LotteryRow[];
+      isCurrentAnswerValid = rows.length > 0 && answer.choices.length === rows.length && answer.choices.every((c: any) => c === 'A' || c === 'B');
+    }
   }
 
   if (isSubmitted) {
     return (
-      <div className="min-h-screen flex flex-col bg-[#FFFDF5] text-gray-800 font-sans">
+      <div className="min-h-screen flex flex-col bg-slate-50 text-gray-800 font-sans">
         <Navbar />
         <main className="flex-grow flex items-center justify-center p-4">
           <motion.div 
@@ -242,7 +183,7 @@ const PublicSurvey: React.FC = () => {
             </p>
             <button
               onClick={() => navigate('/')}
-              className="inline-flex justify-center items-center gap-2 px-6 py-3 rounded-xl bg-slate-900 text-white font-medium hover:bg-slate-800 transition-colors"
+              className="inline-flex justify-center items-center gap-2 px-6 py-3 rounded-xl bg-blue-600 text-white font-medium hover:bg-blue-700 transition-colors"
             >
               Return Home
             </button>
@@ -255,11 +196,11 @@ const PublicSurvey: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex flex-col bg-[#FFFDF5] text-gray-800 font-sans">
+      <div className="min-h-screen flex flex-col bg-slate-50 text-gray-800 font-sans">
         <Navbar />
         <main className="flex-grow flex items-center justify-center p-4">
           <div className="flex flex-col items-center">
-            <Loader2 className="w-12 h-12 text-[#F4C542] animate-spin mb-4" />
+            <Loader2 className="w-12 h-12 text-blue-500 animate-spin mb-4" />
             <p className="text-gray-500 font-medium">Loading survey...</p>
           </div>
         </main>
@@ -270,13 +211,13 @@ const PublicSurvey: React.FC = () => {
 
   if (questions.length === 0) {
     return (
-      <div className="min-h-screen flex flex-col bg-[#FFFDF5] text-gray-800 font-sans">
+      <div className="min-h-screen flex flex-col bg-slate-50 text-gray-800 font-sans">
         <Navbar />
         <main className="flex-grow flex items-center justify-center p-4">
           <div className="text-center bg-white p-8 rounded-2xl shadow-sm border border-gray-100 max-w-md">
             <h2 className="text-2xl font-bold text-slate-900 mb-4">No Survey Available</h2>
             <p className="text-gray-600 mb-6">There are currently no published questions. Please check back later.</p>
-            <button onClick={() => navigate('/')} className="px-6 py-2 bg-slate-900 text-white rounded-lg">Return Home</button>
+            <button onClick={() => navigate('/')} className="px-6 py-2 bg-blue-600 text-white rounded-lg">Return Home</button>
           </div>
         </main>
         <Footer />
@@ -285,18 +226,17 @@ const PublicSurvey: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#FFFDF5] text-gray-800 font-sans">
+    <div className="min-h-screen flex flex-col bg-slate-50 text-gray-800 font-sans">
       <Navbar />
       
       <main className="flex-grow flex flex-col pt-24 pb-12 px-2 sm:px-6 lg:px-8">
-        <div className="w-11/12 md:w-full max-w-3xl mx-auto flex-grow flex flex-col mt-8">
+        <div className="w-11/12 md:w-full max-w-4xl mx-auto flex-grow flex flex-col mt-8">
           
-          {/* Progress Bar and Header */}
           <div className="mb-10">
             <div className="flex justify-between items-center mb-2">
               <div className="flex justify-between w-full text-sm font-medium text-gray-500 mr-4">
-                <span>Question {currentStep + 1} of {visibleQuestions.length}</span>
-                <span>{Math.round(((currentStep + 1) / visibleQuestions.length) * 100)}% completed</span>
+                <span>{question.block_name}</span>
+                <span>Question {currentStep + 1} of {visibleQuestions.length} ({Math.round(((currentStep + 1) / visibleQuestions.length) * 100)}% completed)</span>
               </div>
               <button 
                 onClick={handleExit}
@@ -308,14 +248,13 @@ const PublicSurvey: React.FC = () => {
             </div>
             <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
               <div 
-                className="h-full bg-[#F4C542] transition-all duration-300 ease-out rounded-full"
+                className="h-full bg-blue-500 transition-all duration-300 ease-out rounded-full"
                 style={{ width: `${((currentStep + 1) / visibleQuestions.length) * 100}%` }}
               ></div>
             </div>
           </div>
 
-          {/* Question Card */}
-          <div className="bg-white p-8 sm:p-12 rounded-3xl shadow-sm border border-gray-100 flex-grow flex flex-col relative overflow-hidden">
+          <div className="bg-white p-8 sm:p-12 rounded-3xl shadow-sm border border-slate-200 flex-grow flex flex-col relative overflow-hidden">
             <AnimatePresence mode="wait">
               <motion.div
                 key={currentStep}
@@ -336,7 +275,7 @@ const PublicSurvey: React.FC = () => {
                         type="text"
                         value={answers[question.id] || ''}
                         onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                        className="w-full text-xl p-4 border-b-2 border-gray-200 focus:border-[#F4C542] outline-none bg-transparent transition-colors"
+                        className="w-full text-xl p-4 border-b-2 border-gray-200 focus:border-blue-500 outline-none bg-transparent transition-colors"
                         placeholder="Type your answer here..."
                         autoFocus
                       />
@@ -352,7 +291,7 @@ const PublicSurvey: React.FC = () => {
                         type="number"
                         value={answers[question.id] || ''}
                         onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                        className="w-full text-xl p-4 border-b-2 border-gray-200 focus:border-[#F4C542] outline-none bg-transparent transition-colors"
+                        className="w-full text-xl p-4 border-b-2 border-gray-200 focus:border-blue-500 outline-none bg-transparent transition-colors"
                         placeholder="Type your number here..."
                         autoFocus
                       />
@@ -362,32 +301,46 @@ const PublicSurvey: React.FC = () => {
                     </div>
                   )}
 
-                  {question.type === 'cpt_task' && question.cptData && (
+                  {question.type === 'lottery' && question.options && (
                     <CPTQuestionCard
-                      cptData={question.cptData}
-                      selectedValue={answers[question.id] as 'A' | 'B' | undefined}
-                      onSelect={(choice) => handleAnswerChange(question.id, choice)}
+                      questionId={question.id}
+                      rows={question.options as LotteryRow[]}
+                      selectedValues={answer?.selectedValues || {}}
+                      onSelect={(rowIndex, choice) => {
+                        const currentChoices = answer?.choices ? [...answer.choices] : new Array(question.options.length).fill(null);
+                        const currentSelectedValues = answer?.selectedValues ? { ...answer.selectedValues } : {};
+                        
+                        currentChoices[rowIndex] = choice;
+                        currentSelectedValues[rowIndex] = choice;
+
+                        handleAnswerChange(question.id, {
+                          type: 'lottery_response',
+                          choices: currentChoices,
+                          selectedValues: currentSelectedValues,
+                          rows: question.options
+                        });
+                      }}
                     />
                   )}
 
                   {question.type === 'single_choice' && question.options && (
                     <div className="space-y-3">
-                      {question.options.map((option, idx) => {
+                      {question.options.map((option: string, idx: number) => {
                         const isSelected = answers[question.id] === option;
                         return (
                           <label 
                             key={idx} 
                             className={`block p-4 rounded-xl border-2 cursor-pointer transition-all ${
                               isSelected 
-                                ? 'border-[#F4C542] bg-[#F4C542]/10 ring-1 ring-[#F4C542]' 
-                                : 'border-gray-100 hover:border-gray-200'
+                                ? 'border-blue-500 bg-blue-50/50 ring-1 ring-blue-500' 
+                                : 'border-gray-100 hover:border-blue-200'
                             }`}
                           >
                             <div className="flex items-center gap-3">
                               <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                                isSelected ? 'border-[#F4C542]' : 'border-gray-300'
+                                isSelected ? 'border-blue-500' : 'border-gray-300'
                               }`}>
-                                {isSelected && <div className="w-2.5 h-2.5 bg-[#F4C542] rounded-full"></div>}
+                                {isSelected && <div className="w-2.5 h-2.5 bg-blue-500 rounded-full"></div>}
                               </div>
                               <span className={`text-lg ${isSelected ? 'text-slate-900 font-medium' : 'text-slate-700'}`}>
                                 {option}
@@ -409,7 +362,7 @@ const PublicSurvey: React.FC = () => {
 
                   {question.type === 'multiple_choice' && question.options && (
                     <div className="space-y-3">
-                      {question.options.map((option, idx) => {
+                      {question.options.map((option: string, idx: number) => {
                         const currentAnswers = (answers[question.id] as string[]) || [];
                         const isChecked = currentAnswers.includes(option);
                         return (
@@ -417,13 +370,13 @@ const PublicSurvey: React.FC = () => {
                             key={idx} 
                             className={`block p-4 rounded-xl border-2 cursor-pointer transition-all ${
                               isChecked 
-                                ? 'border-[#F4C542] bg-[#F4C542]/10 ring-1 ring-[#F4C542]' 
-                                : 'border-gray-100 hover:border-gray-200'
+                                ? 'border-blue-500 bg-blue-50/50 ring-1 ring-blue-500' 
+                                : 'border-gray-100 hover:border-blue-200'
                             }`}
                           >
                             <div className="flex items-center gap-3">
                               <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
-                                isChecked ? 'border-[#F4C542] bg-[#F4C542]' : 'border-gray-300'
+                                isChecked ? 'border-blue-500 bg-blue-500' : 'border-gray-300'
                               }`}>
                                 {isChecked && <CheckCircle className="w-3.5 h-3.5 text-white" />}
                               </div>
@@ -453,13 +406,12 @@ const PublicSurvey: React.FC = () => {
               </motion.div>
             </AnimatePresence>
 
-            {/* Navigation Buttons */}
-            <div className="mt-12 pt-6 border-t border-gray-100 flex items-center justify-between relative z-10">
+            <div className="mt-12 pt-6 border-t border-slate-100 flex items-center justify-between relative z-10">
               <button
                 onClick={handleBack}
                 disabled={currentStep === 0}
                 className={`inline-flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-colors ${
-                  currentStep === 0 ? 'text-gray-300 cursor-not-allowed' : 'text-slate-600 hover:bg-gray-100'
+                  currentStep === 0 ? 'text-gray-300 cursor-not-allowed' : 'text-slate-600 hover:bg-slate-100'
                 }`}
               >
                 <ArrowLeft size={20} />
@@ -472,8 +424,8 @@ const PublicSurvey: React.FC = () => {
                   disabled={!isCurrentAnswerValid}
                   className={`inline-flex items-center gap-2 px-8 py-3 rounded-xl font-bold transition-all shadow-sm ${
                     isCurrentAnswerValid
-                      ? 'bg-[#F4C542] text-slate-900 hover:bg-[#e3b632]'
-                      : 'bg-gray-200 text-gray-400 opacity-50 cursor-not-allowed'
+                      ? 'bg-blue-600 text-white hover:bg-blue-700'
+                      : 'bg-slate-200 text-slate-400 opacity-50 cursor-not-allowed'
                   }`}
                 >
                   Next
@@ -486,8 +438,8 @@ const PublicSurvey: React.FC = () => {
                     disabled={!isCurrentAnswerValid || isSubmitting}
                     className={`inline-flex items-center gap-2 px-8 py-3 rounded-xl font-bold transition-all shadow-md ${
                       !isCurrentAnswerValid || isSubmitting
-                        ? 'bg-gray-200 text-gray-400 opacity-50 cursor-not-allowed'
-                        : 'bg-slate-900 text-white hover:bg-slate-800'
+                        ? 'bg-slate-200 text-slate-400 opacity-50 cursor-not-allowed'
+                        : 'bg-green-600 text-white hover:bg-green-700'
                     }`}
                   >
                     {isSubmitting ? (
