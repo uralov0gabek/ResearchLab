@@ -14,8 +14,13 @@ const createCptTask = async (taskData) => {
     throw new AppError('Title is required', 400);
   }
 
+  let block = 'mixed';
+  if (title.startsWith('G')) block = 'gain';
+  if (title.startsWith('L')) block = 'loss';
+
   const { data, error } = await supabaseAdmin.from('cpt_tasks').insert([{
     title,
+    block,
     sure_amount,
     gamble_a_amount,
     gamble_a_prob,
