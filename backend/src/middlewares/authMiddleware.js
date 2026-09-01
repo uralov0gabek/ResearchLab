@@ -30,12 +30,8 @@ const verifyAdmin = async (req, res, next) => {
       return res.status(403).json({ error: 'Forbidden: Invalid or expired token' });
     }
 
-    // Verify Admin Role (Email Check for basic RBAC)
-    const adminEmail = process.env.ADMIN_EMAIL || 'admin@gmail.com';
-    if (user.email !== adminEmail) {
-      console.error("Auth Verification Failed: User is not an admin.", user.email);
-      return res.status(403).json({ error: 'Forbidden: Admin access required' });
-    }
+    // Since users are manually managed in Supabase by the owner,
+    // any valid authenticated user is considered an admin.
     
     // Attach user to request
     req.user = user;
