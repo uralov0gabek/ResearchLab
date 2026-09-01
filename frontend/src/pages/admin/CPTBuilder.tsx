@@ -10,7 +10,7 @@ interface CPTTask {
   gamble_a_prob: number;
   gamble_b_amount: number;
   gamble_b_prob: number;
-  created_at: string;
+  created_at?: string;
 }
 
 const CPTBuilder: React.FC = () => {
@@ -18,6 +18,7 @@ const CPTBuilder: React.FC = () => {
   const [tasks, setTasks] = useState<CPTTask[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
   
   const [formData, setFormData] = useState({
     title: '',
@@ -31,8 +32,26 @@ const CPTBuilder: React.FC = () => {
   const fetchTasks = async () => {
     setIsLoading(true);
     try {
-      const data = await apiFetch('/cpt-tasks');
-      setTasks(data || []);
+      const data = await apiFetch('/questions');
+      if (data) {
+        const cptTasks = data
+          .filter((q: any) => q.type === 'lottery')
+          .map((q: any) => {
+            const opts = Array.isArray(q.options) ? q.options[0] : null;
+            const raw = opts?.raw || {};
+            return {
+              id: q.id,
+              title: q.question_text || q.title,
+              sure_amount: raw.sure_amount || 0,
+              gamble_a_amount: raw.gamble_a_amount || 0,
+              gamble_a_prob: raw.gamble_a_prob || 0,
+              gamble_b_amount: raw.gamble_b_amount || 0,
+              gamble_b_prob: raw.gamble_b_prob || 0,
+              created_at: q.created_at
+            };
+          });
+        setTasks(cptTasks);
+      }
     } catch (error) {
       console.error('Error fetching CPT tasks:', error);
     } finally {
@@ -54,14 +73,29 @@ const CPTBuilder: React.FC = () => {
 
   const handleSave = async () => {
     if (!formData.title) {
-      alert('Please enter a Task Name');
+      setSaveMessage('Please enter a Task Name');
+      setTimeout(() => setSaveMessage(null), 3000);
       return;
     }
     setIsSaving(true);
     try {
-      await apiFetch('/cpt-tasks', {
+      await apiFetch('/questions', {
         method: 'POST',
-        body: JSON.stringify(formData)
+        body: JSON.stringify({
+          questionsToUpsert: [{
+            id: crypto.randomUUID(),
+            block_name: 'CPT Tasks',
+            question_text: formData.title,
+            type: 'lottery',
+            options: [{
+              sureAmount: formData.sure_amount,
+              gamble: `${formData.gamble_a_prob}% chance to win $${formData.gamble_a_amount} or ${formData.gamble_b_prob}% chance to win $${formData.gamble_b_amount}`,
+              raw: { ...formData }
+            }],
+            required: true
+          }],
+          idsToDelete: []
+        })
       });
       setIsConfiguring(false);
       setFormData({
@@ -72,10 +106,13 @@ const CPTBuilder: React.FC = () => {
         gamble_b_amount: 0,
         gamble_b_prob: 50
       });
+      setSaveMessage('Saved successfully!');
+      setTimeout(() => setSaveMessage(null), 3000);
       fetchTasks();
     } catch (error) {
       console.error('Error saving CPT task:', error);
-      alert('Failed to save CPT task.');
+      setSaveMessage('Failed to save CPT task.');
+      setTimeout(() => setSaveMessage(null), 3000);
     } finally {
       setIsSaving(false);
     }
@@ -104,6 +141,11 @@ const CPTBuilder: React.FC = () => {
               <Settings className="w-4 h-4" />
               Create New Task
             </button>
+            {saveMessage && !isConfiguring && (
+              <p className={`mt-4 font-medium text-sm flex items-center gap-1.5 ${saveMessage.includes('Failed') ? 'text-red-600' : 'text-green-600'}`}>
+                {saveMessage}
+              </p>
+            )}
           </div>
         ) : (
           <div className="p-8 border-b border-slate-100">
@@ -172,22 +214,31 @@ const CPTBuilder: React.FC = () => {
                 />
               </div>
             </div>
-            <div className="mt-8 flex justify-end gap-3">
-              <button 
-                onClick={() => setIsConfiguring(false)}
-                className="px-5 py-2.5 text-slate-600 bg-white border border-slate-300 hover:bg-slate-50 font-medium rounded-lg transition-colors"
-                disabled={isSaving}
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={handleSave}
-                disabled={isSaving}
-                className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors flex items-center gap-2"
-              >
-                {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}
-                Save Configuration
-              </button>
+            <div className="mt-8 flex justify-between items-center">
+              <div>
+                {saveMessage && (
+                  <span className={`font-medium text-sm flex items-center gap-1.5 ${saveMessage.includes('Failed') || saveMessage.includes('Please enter') ? 'text-red-600' : 'text-green-600'}`}>
+                    {saveMessage}
+                  </span>
+                )}
+              </div>
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => setIsConfiguring(false)}
+                  className="px-5 py-2.5 text-slate-600 bg-white border border-slate-300 hover:bg-slate-50 font-medium rounded-lg transition-colors"
+                  disabled={isSaving}
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={handleSave}
+                  disabled={isSaving}
+                  className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors flex items-center gap-2"
+                >
+                  {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}
+                  Save Configuration
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -230,7 +281,7 @@ const CPTBuilder: React.FC = () => {
                         ${task.gamble_b_amount} ({task.gamble_b_prob}%)
                       </td>
                       <td className="px-6 py-4 text-slate-400">
-                        {new Date(task.created_at).toLocaleDateString()}
+                        {task.created_at ? new Date(task.created_at).toLocaleDateString() : 'N/A'}
                       </td>
                     </tr>
                   ))}
