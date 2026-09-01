@@ -43,3 +43,17 @@ dist-ssr
 
 # Mac
 .DS_Store
+
+# Playwright and tests
+/tests
+/test-results
+/playwright-report
+playwright.config.ts
+playwright/
+
+backend/__tests__/
+backend/test_*.js
+*.test.tsx
+*.test.ts
+frontend/src/setupTests.ts
+

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, MousePointer2, Loader2, List } from 'lucide-react';
+import { Settings, MousePointer2, Loader2, List, Edit2, Trash2, Plus } from 'lucide-react';
 import { apiFetch } from '../../services/api/apiClient';
 
 interface CPTTask {
@@ -19,6 +19,7 @@ const CPTBuilder: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   
   const [formData, setFormData] = useState({
     title: '',
@@ -83,7 +84,7 @@ const CPTBuilder: React.FC = () => {
         method: 'POST',
         body: JSON.stringify({
           questionsToUpsert: [{
-            id: crypto.randomUUID(),
+            id: editingTaskId || crypto.randomUUID(),
             block_name: 'CPT Tasks',
             question_text: formData.title,
             type: 'lottery',
@@ -108,6 +109,7 @@ const CPTBuilder: React.FC = () => {
       });
       setSaveMessage('Saved successfully!');
       setTimeout(() => setSaveMessage(null), 3000);
+      setEditingTaskId(null);
       fetchTasks();
     } catch (error) {
       console.error('Error saving CPT task:', error);
@@ -115,6 +117,38 @@ const CPTBuilder: React.FC = () => {
       setTimeout(() => setSaveMessage(null), 3000);
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleEdit = (task: CPTTask) => {
+    setFormData({
+      title: task.title,
+      sure_amount: task.sure_amount,
+      gamble_a_amount: task.gamble_a_amount,
+      gamble_a_prob: task.gamble_a_prob,
+      gamble_b_amount: task.gamble_b_amount,
+      gamble_b_prob: task.gamble_b_prob
+    });
+    setEditingTaskId(task.id);
+    setIsConfiguring(true);
+  };
+
+  const handleDelete = async (taskId: string) => {
+    if (!window.confirm('Are you sure you want to delete this task?')) return;
+    
+    setIsLoading(true);
+    try {
+      await apiFetch('/questions', {
+        method: 'POST',
+        body: JSON.stringify({
+          questionsToUpsert: [],
+          idsToDelete: [taskId]
+        })
+      });
+      fetchTasks();
+    } catch (error) {
+      console.error('Error deleting task:', error);
+      setIsLoading(false);
     }
   };
 
@@ -149,7 +183,9 @@ const CPTBuilder: React.FC = () => {
           </div>
         ) : (
           <div className="p-8 border-b border-slate-100">
-            <h2 className="text-xl font-semibold text-slate-900 mb-6">Task Configuration</h2>
+            <h2 className="text-xl font-semibold text-slate-900 mb-6">
+              {editingTaskId ? 'Edit Task Configuration' : 'Task Configuration'}
+            </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-slate-700 mb-1">Task Name</label>
@@ -224,7 +260,18 @@ const CPTBuilder: React.FC = () => {
               </div>
               <div className="flex gap-3">
                 <button 
-                  onClick={() => setIsConfiguring(false)}
+                  onClick={() => {
+                    setIsConfiguring(false);
+                    setEditingTaskId(null);
+                    setFormData({
+                      title: '',
+                      sure_amount: 50,
+                      gamble_a_amount: 100,
+                      gamble_a_prob: 50,
+                      gamble_b_amount: 0,
+                      gamble_b_prob: 50
+                    });
+                  }}
                   className="px-5 py-2.5 text-slate-600 bg-white border border-slate-300 hover:bg-slate-50 font-medium rounded-lg transition-colors"
                   disabled={isSaving}
                 >
@@ -244,9 +291,20 @@ const CPTBuilder: React.FC = () => {
         )}
 
         <div className="p-8 bg-slate-50">
-          <div className="flex items-center gap-2 mb-6">
-            <List className="w-5 h-5 text-slate-500" />
-            <h2 className="text-lg font-semibold text-slate-900">Saved CPT Tasks</h2>
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-2">
+              <List className="w-5 h-5 text-slate-500" />
+              <h2 className="text-lg font-semibold text-slate-900">Saved CPT Tasks</h2>
+            </div>
+            {!isConfiguring && (
+              <button
+                onClick={() => setIsConfiguring(true)}
+                className="px-4 py-2 text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-lg transition-colors flex items-center gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                Add Task
+              </button>
+            )}
           </div>
           
           {isLoading ? (
@@ -266,7 +324,7 @@ const CPTBuilder: React.FC = () => {
                     <th className="px-6 py-4 font-semibold">Sure Amount</th>
                     <th className="px-6 py-4 font-semibold">Gamble A</th>
                     <th className="px-6 py-4 font-semibold">Gamble B</th>
-                    <th className="px-6 py-4 font-semibold">Created</th>
+                    <th className="px-6 py-4 font-semibold text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -280,8 +338,23 @@ const CPTBuilder: React.FC = () => {
                       <td className="px-6 py-4">
                         ${task.gamble_b_amount} ({task.gamble_b_prob}%)
                       </td>
-                      <td className="px-6 py-4 text-slate-400">
-                        {task.created_at ? new Date(task.created_at).toLocaleDateString() : 'N/A'}
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex justify-end gap-2">
+                          <button 
+                            onClick={() => handleEdit(task)}
+                            className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            title="Edit task"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button 
+                            onClick={() => handleDelete(task.id)}
+                            className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Delete task"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
