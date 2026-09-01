@@ -8,7 +8,7 @@ export interface LotteryRow {
 
 export interface QuestionCondition {
   operator?: 'AND' | 'OR';
-  rules?: any[];
+  rules?: { questionId: string; expectedValue: string }[];
   questionId?: string;
   expectedValue?: string;
 }
@@ -18,7 +18,7 @@ export interface Question {
   type: QuestionType;
   text: string;
   block_name: string;
-  options?: any;
+  options?: string[] | { min?: number; max?: number; step?: number; rows?: string[]; columns?: string[] } | LotteryRow[] | unknown;
   dependsOn?: QuestionCondition;
   required?: boolean;
 }

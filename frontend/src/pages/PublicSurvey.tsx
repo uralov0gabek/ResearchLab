@@ -40,7 +40,7 @@ const PublicSurvey: React.FC = () => {
     return <SurveyLoader isEmpty />;
   }
 
-  let validationError = '';
+  const validationError = '';
   
   const isBlockValid = currentBlockQuestions.every(q => {
     if (!q.required) {

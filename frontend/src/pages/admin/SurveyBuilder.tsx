@@ -22,7 +22,7 @@ interface Question {
   block_name: string;
   type: QuestionType;
   title: string;
-  options: any; // Can be string[] or for lottery: { gambleAAmount, gambleAProb, gambleBAmount, gambleBProb } etc.
+  options: unknown; // Can be string[] or for lottery: { gambleAAmount, gambleAProb, gambleBAmount, gambleBProb } etc.
   required: boolean;
   dependsOn?: LogicGroup | LogicRule;
 }
@@ -90,20 +90,20 @@ const SurveyBuilder: React.FC = () => {
   const [showAddBlockModal, setShowAddBlockModal] = useState(false);
   const [newBlockName, setNewBlockName] = useState('');
 
-  const fetchQuestions = async () => {
+  const fetchQuestions = React.useCallback(async () => {
     try {
       setIsLoading(true);
       const data = await apiFetch(`/questions`);
       
       if (data) {
-        const loadedQuestions = data.map((row: any) => ({
+        const loadedQuestions = data.map((row: Record<string, unknown>) => ({
           id: String(row.id),
           block_name: String(row.block_name || 'Default Block'),
           type: String(row.type) as QuestionType,
           title: String(row.question_text || ''),
           options: row.options || [],
           required: Boolean(row.required),
-          dependsOn: row.conditional_logic
+          dependsOn: row.conditional_logic as LogicGroup | LogicRule | undefined
         }));
         setQuestions(loadedQuestions);
         
@@ -119,11 +119,11 @@ const SurveyBuilder: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [activeBlock]);
 
   useEffect(() => {
     fetchQuestions();
-  }, []);
+  }, [fetchQuestions]);
 
   const uniqueBlocks = Array.from(new Set(questions.map(q => q.block_name)));
 
@@ -388,7 +388,7 @@ const SurveyBuilder: React.FC = () => {
                     if (q.dependsOn) {
                       if ('operator' in q.dependsOn) {
                         logicGroup = q.dependsOn as LogicGroup;
-                      } else if ('questionId' in (q.dependsOn as any)) {
+                      } else if ('questionId' in (q.dependsOn as Record<string, unknown>)) {
                         logicGroup = { operator: 'AND', rules: [q.dependsOn as LogicRule] };
                       }
                     }
@@ -582,7 +582,7 @@ const SurveyBuilder: React.FC = () => {
                                 />
                                 <button
                                   onClick={() => {
-                                    const newRows = (q.options?.rows || []).filter((_: any, i: number) => i !== rIdx);
+                                    const newRows = (q.options as {rows?: string[]})?.rows?.filter((_: unknown, i: number) => i !== rIdx) || [];
                                     updateQuestion(q.id, { options: { ...q.options, rows: newRows } });
                                   }}
                                   className="text-gray-400 hover:text-red-500"
@@ -621,7 +621,7 @@ const SurveyBuilder: React.FC = () => {
                                 />
                                 <button
                                   onClick={() => {
-                                    const newCols = (q.options?.columns || []).filter((_: any, i: number) => i !== cIdx);
+                                    const newCols = (q.options as {columns?: string[]})?.columns?.filter((_: unknown, i: number) => i !== cIdx) || [];
                                     updateQuestion(q.id, { options: { ...q.options, columns: newCols } });
                                   }}
                                   className="text-gray-400 hover:text-red-500"

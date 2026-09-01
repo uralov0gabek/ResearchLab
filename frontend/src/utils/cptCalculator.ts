@@ -19,7 +19,7 @@ export interface LotteryRow {
  * @param answers The raw answers from the survey.
  * Expected structure for lottery questions is an array of 'A' or 'B'.
  */
-export const calculateCPTParameters = (answers: Record<string, any>) => {
+export const calculateCPTParameters = (answers: Record<string, unknown>) => {
   // In a full implementation, you would parse the actual lottery questions
   // and map the user's A/B choices to find the switching point.
   // For the sake of the structural implementation based on the prompt:
@@ -36,14 +36,15 @@ export const calculateCPTParameters = (answers: Record<string, any>) => {
   let count = 0;
 
   // Iterate over answers, identify lottery blocks, and calculate
-  Object.values(answers).forEach((ans) => {
+  Object.values(answers).forEach((ansVal) => {
+    const ans = ansVal as Record<string, unknown>;
     if (ans && typeof ans === 'object' && ans.type === 'lottery_response') {
       // Find switching point
       let highestRejected = 0;
       let lowestAccepted = Infinity;
       
-      const choices = ans.choices; // Array of 'A' or 'B'
-      const rows = ans.rows; // Array of LotteryRow
+      const choices = ans.choices as ('A' | 'B')[]; // Array of 'A' or 'B'
+      const rows = ans.rows as LotteryRow[]; // Array of LotteryRow
 
       choices.forEach((choice: 'A' | 'B', index: number) => {
         const sureAmt = rows[index].sureAmount;

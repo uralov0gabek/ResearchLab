@@ -12,8 +12,8 @@ export const calculateCE = (
   if (!lotteryRes || !lotteryRes.rows || lotteryRes.rows.length === 0) return null;
   
   const rows = lotteryRes.rows;
-  let rejectedAmounts: number[] = [];
-  let acceptedAmounts: number[] = [];
+  const rejectedAmounts: number[] = [];
+  const acceptedAmounts: number[] = [];
 
   rows.forEach((row, i) => {
     const choice = getLotteryChoice(lotteryRes, i);
@@ -58,8 +58,8 @@ export const calculateCE = (
 export const calculateMixedGStar = (lotteryRes: LotteryResponse) => {
   if (!lotteryRes || !lotteryRes.rows || lotteryRes.rows.length === 0) return null;
 
-  let rejectedGains: number[] = [];
-  let acceptedGains: number[] = [];
+  const rejectedGains: number[] = [];
+  const acceptedGains: number[] = [];
 
   lotteryRes.rows.forEach((row, i) => {
     // In Mixed lotteries, the gamble changes, so we need to extract the Win amount from the text
@@ -128,7 +128,7 @@ export interface CPTSummary {
   lambda: number | null;
 }
 
-export const processUserCPT = (answers: Record<string, any>, questions: any[]): CPTSummary => {
+export const processUserCPT = (answers: Record<string, unknown>, questions: { id: string; text?: string }[]): CPTSummary => {
   // Find questions by text prefix since IDs are UUIDs
   const G1 = questions.find(q => q.text && q.text.startsWith('G1.'));
   const G2 = questions.find(q => q.text && q.text.startsWith('G2.'));
@@ -142,14 +142,14 @@ export const processUserCPT = (answers: Record<string, any>, questions: any[]): 
   const M2 = questions.find(q => q.text && q.text.startsWith('M2.'));
   const M3 = questions.find(q => q.text && q.text.startsWith('M3.'));
 
-  const getAnswer = (q?: any) => q ? answers[q.id] as LotteryResponse : null;
+  const getAnswer = (q?: { id: string; text?: string }) => q ? answers[q.id] as LotteryResponse : null;
 
   // Constants based on PDF specification
   const G1_X = 1500000, G2_X = 600000, G3_X = 3000000;
   const L1_L = 1500000, L2_L = 600000, L3_L = 3000000;
   const M1_L = 500000,  M2_L = 1000000, M3_L = 200000;
 
-  let alphas: number[] = [], betas: number[] = [], lambdas: number[] = [];
+  const alphas: number[] = [], betas: number[] = [], lambdas: number[] = [];
 
   // Gains -> Alphas
   if (G1) { const ans = getAnswer(G1); if (ans) { const ce = calculateCE(ans); const a = calculateAlpha(ce, G1_X); if (a) alphas.push(a); } }
