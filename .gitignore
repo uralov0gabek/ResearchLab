@@ -57,3 +57,9 @@ backend/test_*.js
 frontend/src/setupTests.ts
 playwright.config.ts
 playwright/
+
+# Testing
+coverage/
+e2e/
+playwright-report/
+test-results/
