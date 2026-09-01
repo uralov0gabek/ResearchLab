@@ -1,4 +1,4 @@
-import { AnswerValue, LotteryResponse } from '../types';
+import type { LotteryResponse } from '../types';
 
 // Helper: Get numeric values from responses
 const getLotteryChoice = (lotteryRes: LotteryResponse, index: number) => {
@@ -152,23 +152,23 @@ export const processUserCPT = (answers: Record<string, any>, questions: any[]): 
   let alphas: number[] = [], betas: number[] = [], lambdas: number[] = [];
 
   // Gains -> Alphas
-  if (G1) { const ce = calculateCE(getAnswer(G1)); const a = calculateAlpha(ce, G1_X); if (a) alphas.push(a); }
-  if (G2) { const ce = calculateCE(getAnswer(G2)); const a = calculateAlpha(ce, G2_X); if (a) alphas.push(a); }
-  if (G3) { const ce = calculateCE(getAnswer(G3)); const a = calculateAlpha(ce, G3_X); if (a) alphas.push(a); }
+  if (G1) { const ans = getAnswer(G1); if (ans) { const ce = calculateCE(ans); const a = calculateAlpha(ce, G1_X); if (a) alphas.push(a); } }
+  if (G2) { const ans = getAnswer(G2); if (ans) { const ce = calculateCE(ans); const a = calculateAlpha(ce, G2_X); if (a) alphas.push(a); } }
+  if (G3) { const ans = getAnswer(G3); if (ans) { const ce = calculateCE(ans); const a = calculateAlpha(ce, G3_X); if (a) alphas.push(a); } }
 
   // Losses -> Betas
-  if (L1) { const ce = calculateCE(getAnswer(L1), true); const b = calculateBeta(ce, L1_L); if (b) betas.push(b); }
-  if (L2) { const ce = calculateCE(getAnswer(L2), true); const b = calculateBeta(ce, L2_L); if (b) betas.push(b); }
-  if (L3) { const ce = calculateCE(getAnswer(L3), true); const b = calculateBeta(ce, L3_L); if (b) betas.push(b); }
+  if (L1) { const ans = getAnswer(L1); if (ans) { const ce = calculateCE(ans, true); const b = calculateBeta(ce, L1_L); if (b) betas.push(b); } }
+  if (L2) { const ans = getAnswer(L2); if (ans) { const ce = calculateCE(ans, true); const b = calculateBeta(ce, L2_L); if (b) betas.push(b); } }
+  if (L3) { const ans = getAnswer(L3); if (ans) { const ce = calculateCE(ans, true); const b = calculateBeta(ce, L3_L); if (b) betas.push(b); } }
 
   const avgAlpha = alphas.length > 0 ? alphas.reduce((s, x) => s + x, 0) / alphas.length : null;
   const avgBeta = betas.length > 0 ? betas.reduce((s, x) => s + x, 0) / betas.length : null;
 
   // Mixed -> Lambdas (requires Alpha and Beta)
   if (avgAlpha && avgBeta) {
-    if (M1) { const gs = calculateMixedGStar(getAnswer(M1)); const l = calculateLambda(avgAlpha, avgBeta, gs, M1_L); if (l) lambdas.push(l); }
-    if (M2) { const gs = calculateMixedGStar(getAnswer(M2)); const l = calculateLambda(avgAlpha, avgBeta, gs, M2_L); if (l) lambdas.push(l); }
-    if (M3) { const gs = calculateMixedGStar(getAnswer(M3)); const l = calculateLambda(avgAlpha, avgBeta, gs, M3_L); if (l) lambdas.push(l); }
+    if (M1) { const ans = getAnswer(M1); if (ans) { const gs = calculateMixedGStar(ans); const l = calculateLambda(avgAlpha, avgBeta, gs, M1_L); if (l) lambdas.push(l); } }
+    if (M2) { const ans = getAnswer(M2); if (ans) { const gs = calculateMixedGStar(ans); const l = calculateLambda(avgAlpha, avgBeta, gs, M2_L); if (l) lambdas.push(l); } }
+    if (M3) { const ans = getAnswer(M3); if (ans) { const gs = calculateMixedGStar(ans); const l = calculateLambda(avgAlpha, avgBeta, gs, M3_L); if (l) lambdas.push(l); } }
   }
 
   const avgLambda = lambdas.length > 0 ? lambdas.reduce((s, x) => s + x, 0) / lambdas.length : null;

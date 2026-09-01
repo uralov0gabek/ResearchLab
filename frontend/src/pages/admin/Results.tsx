@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { LineChart, Download, Users, Brain, Loader2 } from 'lucide-react';
-import { apiFetch } from '../../utils/apiClient';
-import { processUserCPT, CPTSummary } from '../../utils/cptCalculations';
-import { Question } from '../../types';
+import { apiFetch } from '../../services/api/apiClient';
+import { processUserCPT } from '../../utils/cptCalculations';
+import type { Question } from '../../types';
 
 interface GroupStats {
   count: number;
