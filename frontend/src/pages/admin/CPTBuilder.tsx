@@ -160,7 +160,7 @@ const CPTBuilder: React.FC = () => {
 
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
         {!isConfiguring ? (
-          <div className="p-12 flex flex-col items-center justify-center text-center border-b border-slate-100">
+          <div className="p-6 sm:p-12 flex flex-col items-center justify-center text-center border-b border-slate-100">
             <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mb-6">
               <MousePointer2 className="w-10 h-10 text-blue-500" />
             </div>
@@ -182,7 +182,7 @@ const CPTBuilder: React.FC = () => {
             )}
           </div>
         ) : (
-          <div className="p-8 border-b border-slate-100">
+          <div className="p-4 sm:p-8 border-b border-slate-100">
             <h2 className="text-xl font-semibold text-slate-900 mb-6">
               {editingTaskId ? 'Edit Task Configuration' : 'Task Configuration'}
             </h2>
@@ -250,7 +250,7 @@ const CPTBuilder: React.FC = () => {
                 />
               </div>
             </div>
-            <div className="mt-8 flex justify-between items-center">
+            <div className="mt-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div>
                 {saveMessage && (
                   <span className={`font-medium text-sm flex items-center gap-1.5 ${saveMessage.includes('Failed') || saveMessage.includes('Please enter') ? 'text-red-600' : 'text-green-600'}`}>
@@ -258,7 +258,7 @@ const CPTBuilder: React.FC = () => {
                   </span>
                 )}
               </div>
-              <div className="flex gap-3">
+              <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                 <button 
                   onClick={() => {
                     setIsConfiguring(false);
