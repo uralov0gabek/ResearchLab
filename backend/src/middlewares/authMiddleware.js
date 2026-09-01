@@ -30,10 +30,14 @@ const verifyAdmin = async (req, res, next) => {
       return res.status(403).json({ error: 'Forbidden: Invalid or expired token' });
     }
 
+    // Verify Admin Role (Email Check for basic RBAC)
+    if (user.email !== 'admin@gmail.com') {
+      console.error("Auth Verification Failed: User is not an admin.", user.email);
+      return res.status(403).json({ error: 'Forbidden: Admin access required' });
+    }
+    
     // Attach user to request
     req.user = user;
-    
-    // (Optional RBAC check can go here later: if (user.role !== 'admin') ... )
     
     next();
   } catch (err) {
