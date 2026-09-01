@@ -82,18 +82,24 @@ export const useSurvey = () => {
     });
   }, [answers, questions]);
 
+  const activeBlocks = useMemo(() => {
+    // Only blocks that have AT LEAST ONE visible question
+    const blockNames = visibleQuestions.map(q => q.block_name);
+    return Array.from(new Set(blockNames));
+  }, [visibleQuestions]);
+
   useEffect(() => {
-    if (visibleQuestions.length > 0 && currentStep >= visibleQuestions.length) {
-      setCurrentStep(visibleQuestions.length - 1);
+    if (activeBlocks.length > 0 && currentStep >= activeBlocks.length) {
+      setCurrentStep(activeBlocks.length - 1);
     }
-  }, [visibleQuestions, currentStep]);
+  }, [activeBlocks, currentStep]);
 
   const handleAnswerChange = (questionId: string, value: AnswerValue) => {
     setAnswers(prev => ({ ...prev, [questionId]: value }));
   };
 
   const handleNext = () => {
-    if (currentStep < visibleQuestions.length - 1) {
+    if (currentStep < activeBlocks.length - 1) {
       setCurrentStep(prev => prev + 1);
     }
   };
@@ -128,7 +134,8 @@ export const useSurvey = () => {
     }
   };
 
-  const question = visibleQuestions[currentStep];
+  const currentBlockName = activeBlocks[currentStep];
+  const currentBlockQuestions = visibleQuestions.filter(q => q.block_name === currentBlockName);
 
   return {
     sessionId,
@@ -136,11 +143,13 @@ export const useSurvey = () => {
     answers,
     questions,
     visibleQuestions,
+    activeBlocks,
+    currentBlockName,
+    currentBlockQuestions,
     isLoading,
     isSubmitting,
     isSubmitted,
     submitError,
-    question,
     handleAnswerChange,
     handleNext,
     handleBack,

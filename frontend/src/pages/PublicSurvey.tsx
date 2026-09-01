@@ -19,7 +19,9 @@ const PublicSurvey: React.FC = () => {
     isSubmitting,
     isSubmitted,
     submitError,
-    question,
+    activeBlocks,
+    currentBlockName,
+    currentBlockQuestions,
     handleAnswerChange,
     handleNext,
     handleBack,
@@ -39,23 +41,39 @@ const PublicSurvey: React.FC = () => {
     return <SurveyLoader isEmpty />;
   }
 
-  let isCurrentAnswerValid = false;
   let validationError = '';
-  const answer = answers[question?.id];
   
-  if (question?.type === 'short_text' || question?.type === 'number_input') {
-    isCurrentAnswerValid = typeof answer === 'string' && answer.trim().length > 0;
-  } else if (question?.type === 'single_choice') {
-    isCurrentAnswerValid = !!answer;
-  } else if (question?.type === 'multiple_choice') {
-    isCurrentAnswerValid = Array.isArray(answer) && answer.length > 0;
-  } else if (question?.type === 'lottery') {
-    if (answer && typeof answer === 'object' && !Array.isArray(answer) && (answer as LotteryResponse).type === 'lottery_response' && (answer as LotteryResponse).choices) {
-      const rows = question.options as LotteryRow[];
-      const lotteryAnswer = answer as LotteryResponse;
-      isCurrentAnswerValid = rows.length > 0 && lotteryAnswer.choices.length === rows.length && lotteryAnswer.choices.every((c: any) => c === 'A' || c === 'B');
+  const isBlockValid = currentBlockQuestions.every(q => {
+    if (!q.required) {
+      // If it's a lottery, and they started answering it, it must be complete
+      if (q.type === 'lottery') {
+        const ans = answers[q.id];
+        if (ans && typeof ans === 'object' && !Array.isArray(ans) && (ans as LotteryResponse).choices && (ans as LotteryResponse).choices.length > 0) {
+          const rows = q.options as LotteryRow[];
+          const lotteryAnswer = ans as LotteryResponse;
+          return rows.length > 0 && lotteryAnswer.choices.length === rows.length && lotteryAnswer.choices.every((c: any) => c === 'A' || c === 'B');
+        }
+      }
+      return true; 
     }
-  }
+
+    const answer = answers[q.id];
+    if (q.type === 'short_text' || q.type === 'number_input') {
+      return typeof answer === 'string' && answer.trim().length > 0;
+    } else if (q.type === 'single_choice') {
+      return !!answer;
+    } else if (q.type === 'multiple_choice') {
+      return Array.isArray(answer) && answer.length > 0;
+    } else if (q.type === 'lottery') {
+      if (answer && typeof answer === 'object' && !Array.isArray(answer) && (answer as LotteryResponse).type === 'lottery_response' && (answer as LotteryResponse).choices) {
+        const rows = q.options as LotteryRow[];
+        const lotteryAnswer = answer as LotteryResponse;
+        return rows.length > 0 && lotteryAnswer.choices.length === rows.length && lotteryAnswer.choices.every((c: any) => c === 'A' || c === 'B');
+      }
+      return false;
+    }
+    return false;
+  });
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 text-gray-800 font-sans">
@@ -67,8 +85,8 @@ const PublicSurvey: React.FC = () => {
           <div className="mb-10">
             <div className="flex justify-between items-center mb-2">
               <div className="flex justify-between w-full text-sm font-medium text-gray-500 mr-4">
-                <span>{question.block_name}</span>
-                <span>Question {currentStep + 1} of {visibleQuestions.length} ({Math.round(((currentStep + 1) / visibleQuestions.length) * 100)}% completed)</span>
+                <span>{currentBlockName}</span>
+                <span>Block {currentStep + 1} of {activeBlocks.length} ({Math.round(((currentStep + 1) / activeBlocks.length) * 100)}% completed)</span>
               </div>
               <button 
                 onClick={handleExit}
@@ -81,7 +99,7 @@ const PublicSurvey: React.FC = () => {
             <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
               <div 
                 className="h-full bg-blue-500 transition-all duration-300 ease-out rounded-full"
-                style={{ width: `${((currentStep + 1) / visibleQuestions.length) * 100}%` }}
+                style={{ width: `${((currentStep + 1) / activeBlocks.length) * 100}%` }}
               ></div>
             </div>
           </div>
@@ -96,17 +114,21 @@ const PublicSurvey: React.FC = () => {
                 transition={{ duration: 0.3 }}
                 className="flex-grow flex flex-col w-full h-full"
               >
-                <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-8 leading-snug">
-                  {question.text}
-                </h2>
-
-                <div className="flex-grow">
-                  <QuestionRenderer 
-                    question={question}
-                    answer={answer}
-                    validationError={validationError}
-                    onAnswerChange={handleAnswerChange}
-                  />
+                <div className="flex-grow space-y-12">
+                  {currentBlockQuestions.map((q, idx) => (
+                    <div key={q.id} className="border-b border-slate-100 pb-10 last:border-0 last:pb-0">
+                      <h2 className="text-xl sm:text-2xl font-semibold text-slate-900 mb-6 leading-snug">
+                        <span className="text-slate-400 mr-2">{idx + 1}.</span> 
+                        {q.text} {q.required && <span className="text-red-500 ml-1">*</span>}
+                      </h2>
+                      <QuestionRenderer 
+                        question={q}
+                        answer={answers[q.id]}
+                        validationError={validationError}
+                        onAnswerChange={handleAnswerChange}
+                      />
+                    </div>
+                  ))}
                 </div>
               </motion.div>
             </AnimatePresence>
@@ -123,12 +145,12 @@ const PublicSurvey: React.FC = () => {
                 Back
               </button>
 
-              {currentStep < visibleQuestions.length - 1 ? (
+              {currentStep < activeBlocks.length - 1 ? (
                 <button
                   onClick={handleNext}
-                  disabled={!isCurrentAnswerValid}
+                  disabled={!isBlockValid}
                   className={`inline-flex items-center gap-2 px-8 py-3 rounded-xl font-bold transition-all shadow-sm ${
-                    isCurrentAnswerValid
+                    isBlockValid
                       ? 'bg-blue-600 text-white hover:bg-blue-700'
                       : 'bg-slate-200 text-slate-400 opacity-50 cursor-not-allowed'
                   }`}
@@ -140,9 +162,9 @@ const PublicSurvey: React.FC = () => {
                 <div className="flex flex-col items-end">
                   <button
                     onClick={handleSubmit}
-                    disabled={!isCurrentAnswerValid || isSubmitting}
+                    disabled={!isBlockValid || isSubmitting}
                     className={`inline-flex items-center gap-2 px-8 py-3 rounded-xl font-bold transition-all shadow-md ${
-                      !isCurrentAnswerValid || isSubmitting
+                      !isBlockValid || isSubmitting
                         ? 'bg-slate-200 text-slate-400 opacity-50 cursor-not-allowed'
                         : 'bg-green-600 text-white hover:bg-green-700'
                     }`}
