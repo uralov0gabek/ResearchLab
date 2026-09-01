@@ -1,4 +1,4 @@
-<h1 align="center">UzCombinator Research Lab (Loss Aversion & CPT)</h1>
+<h1 align="center">Research Lab (Loss Aversion & CPT)</h1>
 
 <p align="center">
   <img src="https://img.shields.io/badge/React-19-blue.svg" alt="React">
@@ -70,7 +70,7 @@ Before you begin, ensure you have the following installed:
    cd backend
    npm install
    # Start the Express server on http://localhost:5000
-   npm run start 
+   npm run start
    ```
 
 4. **Install and Run Frontend:**
