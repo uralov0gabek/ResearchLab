@@ -17,7 +17,7 @@ const CPTQuestionCard: React.FC<CPTQuestionCardProps> = ({ rows, selectedValues,
   return (
     <div className="w-full mt-6 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
       <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse">
+        <table className="w-full text-left border-collapse min-w-[500px]">
           <thead>
             <tr className="bg-slate-50 border-b border-slate-200">
               <th className="py-4 px-6 font-semibold text-slate-700 w-1/2 text-center">Option A (Sure Amount)</th>

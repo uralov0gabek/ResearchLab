@@ -316,8 +316,8 @@ const CPTBuilder: React.FC = () => {
               No tasks saved yet.
             </div>
           ) : (
-            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-              <table className="w-full text-left text-sm text-slate-600">
+            <div className="bg-white rounded-xl border border-slate-200 overflow-x-auto w-full">
+              <table className="w-full text-left text-sm text-slate-600 min-w-[600px]">
                 <thead className="bg-slate-50 border-b border-slate-200 text-slate-700">
                   <tr>
                     <th className="px-6 py-4 font-semibold">Title</th>

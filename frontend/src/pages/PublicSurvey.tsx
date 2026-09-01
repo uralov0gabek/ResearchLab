@@ -79,7 +79,7 @@ const PublicSurvey: React.FC = () => {
       <Navbar />
       
       <main className="flex-grow flex flex-col pt-24 pb-12 px-2 sm:px-6 lg:px-8">
-        <div className="w-11/12 md:w-full max-w-4xl mx-auto flex-grow flex flex-col mt-8">
+        <div className="w-full max-w-4xl mx-auto flex-grow flex flex-col mt-8">
           
           <div className="mb-10">
             <div className="flex justify-between items-center mb-2">

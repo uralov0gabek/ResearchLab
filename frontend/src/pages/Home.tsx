@@ -20,7 +20,7 @@ const Home: React.FC = () => {
               <span className="flex h-2 w-2 rounded-full bg-[#F4C542]"></span>
               Behavioral Economics Study 2026
             </div>
-            <h1 className="text-5xl lg:text-7xl font-extrabold text-slate-900 tracking-tight leading-[1.1] mb-8">
+            <h1 className="text-4xl sm:text-5xl lg:text-7xl font-extrabold text-slate-900 tracking-tight leading-[1.1] mb-8">
               Understanding Risk, Loss, and Ambition Across <span className="text-transparent bg-clip-text bg-gradient-to-r from-slate-900 to-[#F4C542]">Generations</span>
             </h1>
             <p className="text-xl text-gray-600 leading-relaxed mb-10 max-w-2xl">

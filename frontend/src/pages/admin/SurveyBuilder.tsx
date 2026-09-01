@@ -527,7 +527,7 @@ const SurveyBuilder: React.FC = () => {
                   {q.type === 'slider' && (
                     <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 mt-4">
                       <h4 className="font-semibold text-slate-700 text-sm mb-3">Slider Configuration</h4>
-                      <div className="flex gap-4">
+                      <div className="flex flex-col sm:flex-row gap-4">
                         <div className="flex-1">
                           <label className="block text-xs font-medium text-slate-500 mb-1">Min Value</label>
                           <input

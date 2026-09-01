@@ -34,11 +34,11 @@ export const AdminLogin: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-950 flex items-center justify-center relative overflow-hidden">
       {/* Dynamic Background elements */}
-      <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl mix-blend-screen animate-pulse" />
-      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl mix-blend-screen animate-pulse delay-1000" />
+      <div className="absolute top-0 left-1/4 w-72 h-72 md:w-96 md:h-96 bg-blue-500/20 rounded-full blur-3xl mix-blend-screen animate-pulse" />
+      <div className="absolute bottom-0 right-1/4 w-72 h-72 md:w-96 md:h-96 bg-purple-500/20 rounded-full blur-3xl mix-blend-screen animate-pulse delay-1000" />
       
-      <div className="relative z-10 w-full max-w-md p-8">
-        <div className="backdrop-blur-xl bg-slate-900/50 p-8 rounded-2xl shadow-2xl border border-white/10">
+      <div className="relative z-10 w-full max-w-md p-4 sm:p-8">
+        <div className="backdrop-blur-xl bg-slate-900/50 p-6 sm:p-8 rounded-2xl shadow-2xl border border-white/10">
           <div className="mb-8 text-center">
             <h1 className="text-3xl font-bold text-white tracking-tight mb-2">Lab Admin</h1>
             <p className="text-slate-400">Sign in to Research Lab</p>

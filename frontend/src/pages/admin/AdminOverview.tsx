@@ -55,7 +55,7 @@ const AdminOverview: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 flex flex-col items-center justify-center min-h-[400px]">
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-8 flex flex-col items-center justify-center min-h-[400px]">
         <Loader2 className="w-10 h-10 animate-spin text-[#F4C542] mb-4" />
         <p className="text-slate-500 font-medium">Loading Analytics...</p>
       </div>
@@ -109,8 +109,8 @@ const AdminOverview: React.FC = () => {
           </div>
         ) : (
           <>
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 hover:shadow-md transition-shadow">
-              <h2 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-8 hover:shadow-md transition-shadow">
+              <h2 className="text-lg sm:text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
                 Average Risk Tolerance by Generation
               </h2>
               <div className="w-full">
@@ -130,8 +130,8 @@ const AdminOverview: React.FC = () => {
               </div>
             </div>
 
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 hover:shadow-md transition-shadow">
-              <h2 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-8 hover:shadow-md transition-shadow">
+              <h2 className="text-lg sm:text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
                 Loss Aversion by Role
               </h2>
               <div className="w-full flex justify-center">
