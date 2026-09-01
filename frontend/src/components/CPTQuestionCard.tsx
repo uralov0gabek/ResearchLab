@@ -40,7 +40,9 @@ const CPTQuestionCard: React.FC<CPTQuestionCardProps> = ({ rows, selectedValues,
                           : 'bg-white border-slate-200 text-slate-700 hover:border-blue-300'
                       }`}
                     >
-                      Take {row.sureAmount.toLocaleString()} UZS for sure
+                      {row.sureAmount < 0 
+                        ? `Accept a sure loss of ${Math.abs(row.sureAmount).toLocaleString()} UZS` 
+                        : `Take ${row.sureAmount.toLocaleString()} UZS for sure`}
                     </motion.button>
                   </td>
                   <td className="py-4 px-6 text-center">
