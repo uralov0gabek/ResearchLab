@@ -11,7 +11,8 @@ const { errorHandler } = require('./middlewares/errorHandler');
 
 const app = express();
 
-const allowedOrigins = ['https://research-lab-v.vercel.app', 'http://localhost:5173'];
+const frontendUrl = process.env.FRONTEND_URL || 'https://research-lab-v.vercel.app';
+const allowedOrigins = [frontendUrl, 'http://localhost:5173'];
 
 app.use(cors({
   origin: function (origin, callback) {

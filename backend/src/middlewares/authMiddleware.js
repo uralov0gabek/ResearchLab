@@ -31,7 +31,8 @@ const verifyAdmin = async (req, res, next) => {
     }
 
     // Verify Admin Role (Email Check for basic RBAC)
-    if (user.email !== 'admin@gmail.com') {
+    const adminEmail = process.env.ADMIN_EMAIL || 'admin@gmail.com';
+    if (user.email !== adminEmail) {
       console.error("Auth Verification Failed: User is not an admin.", user.email);
       return res.status(403).json({ error: 'Forbidden: Admin access required' });
     }
