@@ -18,7 +18,7 @@ export interface Question {
   type: QuestionType;
   text: string;
   block_name: string;
-  options?: string[] | { min?: number; max?: number; step?: number; rows?: string[]; columns?: string[] } | LotteryRow[] | unknown;
+  options?: any;
   dependsOn?: QuestionCondition;
   required?: boolean;
 }

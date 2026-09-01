@@ -1,23 +1,29 @@
-import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import Home from './pages/Home';
-import Login from './pages/Login';
-import PrivacyPolicy from './pages/PrivacyPolicy';
-import Contact from './pages/Contact';
-import PublicSurvey from './pages/PublicSurvey';
-
-import AdminLayout from './components/AdminLayout';
+import React, { Suspense } from 'react';
+import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute';
+import { Loader2 } from 'lucide-react';
+
+// Lazy loaded components
+const Home = React.lazy(() => import('./pages/Home'));
+const Login = React.lazy(() => import('./pages/Login'));
+const PrivacyPolicy = React.lazy(() => import('./pages/PrivacyPolicy'));
+const Contact = React.lazy(() => import('./pages/Contact'));
+const PublicSurvey = React.lazy(() => import('./pages/PublicSurvey'));
+const AdminLayout = React.lazy(() => import('./components/AdminLayout'));
 
 // Admin Pages
-import AdminOverview from './pages/admin/AdminOverview';
-import SurveyBuilder from './pages/admin/SurveyBuilder';
-import CPTBuilder from './pages/admin/CPTBuilder';
-import Responses from './pages/admin/Responses';
-import Results from './pages/admin/Results';
-import Settings from './pages/admin/Settings';
+const AdminOverview = React.lazy(() => import('./pages/admin/AdminOverview'));
+const SurveyBuilder = React.lazy(() => import('./pages/admin/SurveyBuilder'));
+const CPTBuilder = React.lazy(() => import('./pages/admin/CPTBuilder'));
+const Responses = React.lazy(() => import('./pages/admin/Responses'));
+const Results = React.lazy(() => import('./pages/admin/Results'));
+const Settings = React.lazy(() => import('./pages/admin/Settings'));
 
-import { Link } from 'react-router-dom';
+const PageLoader = () => (
+  <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+  </div>
+);
 
 const NotFound = () => (
   <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-8">
@@ -44,7 +50,8 @@ const NotFound = () => (
 
 const App: React.FC = () => {
   return (
-      <BrowserRouter>
+    <BrowserRouter>
+      <Suspense fallback={<PageLoader />}>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
@@ -71,7 +78,8 @@ const App: React.FC = () => {
           
           <Route path="*" element={<NotFound />} />
         </Routes>
-      </BrowserRouter>
+      </Suspense>
+    </BrowserRouter>
   );
 };
 

@@ -21,6 +21,15 @@ export const useSurvey = () => {
     const fetchQuestions = async () => {
       try {
         setIsLoading(true);
+
+        const cachedQuestions = sessionStorage.getItem('survey_questions_cache');
+        if (cachedQuestions) {
+          const parsedCache = JSON.parse(cachedQuestions);
+          setQuestions(parsedCache);
+          setIsLoading(false);
+          return;
+        }
+
         const data = await apiFetch('/questions').catch(() => []);
         
         let allQuestions: Question[] = [];
@@ -35,6 +44,7 @@ export const useSurvey = () => {
           }));
         }
 
+        sessionStorage.setItem('survey_questions_cache', JSON.stringify(allQuestions));
         setQuestions(allQuestions);
       } catch (err) {
         console.error('Error fetching questions:', err);
