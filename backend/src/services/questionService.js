@@ -9,8 +9,12 @@ const fetchQuestions = async () => {
 
 const saveQuestions = async (questionsToUpsert, idsToDelete) => {
   if (questionsToUpsert && questionsToUpsert.length > 0) {
+    console.log('Upserting questions:', JSON.stringify(questionsToUpsert, null, 2));
     const { error } = await supabaseAdmin.from('questions').upsert(questionsToUpsert);
-    if (error) throw new AppError(error.message || 'Error upserting questions', 500);
+    if (error) {
+      console.error('Supabase Upsert Error:', error);
+      throw new AppError(error.message || 'Error upserting questions', 500);
+    }
   }
 
   if (idsToDelete && idsToDelete.length > 0) {

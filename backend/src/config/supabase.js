@@ -4,6 +4,7 @@ require('dotenv').config();
 // We need SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY from .env
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+console.log('Using Service Key starting with:', supabaseServiceKey ? supabaseServiceKey.substring(0, 20) : 'undefined');
 
 if (!supabaseUrl || !supabaseServiceKey) {
   console.warn('Missing Supabase environment variables. Make sure SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are set in the backend/.env file.');
@@ -13,6 +14,12 @@ if (!supabaseUrl || !supabaseServiceKey) {
   console.error('Please update your backend/.env with the actual Service Role Key (JWT starting with eyJ...).\n');
 }
 
-const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false,
+    detectSessionInUrl: false
+  }
+});
 
 module.exports = { supabaseAdmin };
