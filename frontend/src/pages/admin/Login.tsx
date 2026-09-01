@@ -1,13 +1,13 @@
-import React, { useState } from 'react';
-import { Navigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
-import { supabase } from '../../lib/supabase';
-import { Loader2, Mail, Lock } from 'lucide-react';
+import React, { useState } from "react";
+import { Navigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
+import { supabase } from "../../lib/supabase";
+import { Loader2, Mail, Lock } from "lucide-react";
 
 export const AdminLogin: React.FC = () => {
   const { user } = useAuth();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -36,11 +36,13 @@ export const AdminLogin: React.FC = () => {
       {/* Dynamic Background elements */}
       <div className="absolute top-0 left-1/4 w-72 h-72 md:w-96 md:h-96 bg-blue-500/20 rounded-full blur-3xl mix-blend-screen animate-pulse" />
       <div className="absolute bottom-0 right-1/4 w-72 h-72 md:w-96 md:h-96 bg-purple-500/20 rounded-full blur-3xl mix-blend-screen animate-pulse delay-1000" />
-      
+
       <div className="relative z-10 w-full max-w-md p-4 sm:p-8">
         <div className="backdrop-blur-xl bg-slate-900/50 p-6 sm:p-8 rounded-2xl shadow-2xl border border-white/10">
           <div className="mb-8 text-center">
-            <h1 className="text-3xl font-bold text-white tracking-tight mb-2">Lab Admin</h1>
+            <h1 className="text-3xl font-bold text-white tracking-tight mb-2">
+              Lab Admin
+            </h1>
             <p className="text-slate-400">Sign in to Research Lab</p>
           </div>
 
@@ -50,9 +52,12 @@ export const AdminLogin: React.FC = () => {
                 {error}
               </div>
             )}
-            
+
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-300" htmlFor="email">
+              <label
+                className="text-sm font-medium text-slate-300"
+                htmlFor="email"
+              >
                 Email Address
               </label>
               <div className="relative">
@@ -66,13 +71,16 @@ export const AdminLogin: React.FC = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full pl-10 pr-4 py-2.5 bg-slate-800/50 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
-                  placeholder="admin@researchlab.com"
+                  placeholder="nurbeksaliyev08@gmail.com"
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-300" htmlFor="password">
+              <label
+                className="text-sm font-medium text-slate-300"
+                htmlFor="password"
+              >
                 Password
               </label>
               <div className="relative">
@@ -102,7 +110,7 @@ export const AdminLogin: React.FC = () => {
                   Signing in...
                 </>
               ) : (
-                'Sign In'
+                "Sign In"
               )}
             </button>
           </form>
