@@ -5,7 +5,17 @@ import {
 } from 'lucide-react';
 import { apiFetch } from '../../services/api/apiClient';
 
-type QuestionType = 'single_choice' | 'multiple_choice' | 'short_text' | 'number_input' | 'lottery';
+type QuestionType = 'single_choice' | 'multiple_choice' | 'short_text' | 'number_input' | 'lottery' | 'matrix' | 'slider';
+
+interface LogicRule {
+  questionId: string;
+  expectedValue: string;
+}
+
+interface LogicGroup {
+  operator: 'AND' | 'OR';
+  rules: LogicRule[];
+}
 
 interface Question {
   id: string;
@@ -14,10 +24,7 @@ interface Question {
   title: string;
   options: any; // Can be string[] or for lottery: { gambleAAmount, gambleAProb, gambleBAmount, gambleBProb } etc.
   required: boolean;
-  dependsOn?: {
-    questionId: string;
-    expectedValue: string;
-  };
+  dependsOn?: LogicGroup | LogicRule;
 }
 
 const QuestionTypeDropdown = ({ value, onChange }: { value: QuestionType, onChange: (v: QuestionType) => void }) => {
@@ -27,6 +34,8 @@ const QuestionTypeDropdown = ({ value, onChange }: { value: QuestionType, onChan
     { value: 'multiple_choice', label: 'Multiple Choice', icon: CheckSquareIcon },
     { value: 'short_text', label: 'Short Text', icon: Type },
     { value: 'number_input', label: 'Number Input', icon: Hash },
+    { value: 'matrix', label: 'Matrix Table', icon: LayoutGrid },
+    { value: 'slider', label: 'Slider Scale', icon: LayoutGrid },
     { value: 'lottery', label: 'Lottery Choice (CPT)', icon: Dices },
   ];
   
@@ -94,7 +103,7 @@ const SurveyBuilder: React.FC = () => {
           title: String(row.question_text || ''),
           options: row.options || [],
           required: Boolean(row.required),
-          dependsOn: row.conditional_logic as { questionId: string, expectedValue: string } | undefined
+          dependsOn: row.conditional_logic
         }));
         setQuestions(loadedQuestions);
         
@@ -367,44 +376,106 @@ const SurveyBuilder: React.FC = () => {
                 </div>
 
                 <div className="mb-6 bg-slate-50 p-4 rounded-xl border border-slate-200">
-                  <div className="flex items-center gap-2 mb-3 text-sm font-semibold text-slate-700">
-                    <CheckSquare size={16} />
-                    <span>Skip Logic / Conditional Display</span>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                      <CheckSquare size={16} />
+                      <span>Skip Logic / Conditional Display</span>
+                    </div>
                   </div>
-                  <div className="flex flex-col sm:flex-row gap-4 items-center">
-                    <span className="text-sm text-slate-600 shrink-0">Show this question ONLY IF:</span>
-                    <select
-                      value={q.dependsOn?.questionId || ''}
-                      onChange={(e) => {
-                        const qId = e.target.value;
-                        if (!qId) {
-                          updateQuestion(q.id, { dependsOn: undefined });
-                        } else {
-                          updateQuestion(q.id, { dependsOn: { questionId: qId, expectedValue: q.dependsOn?.expectedValue || '' } });
-                        }
-                      }}
-                      className="flex-1 appearance-none rounded-lg border border-gray-300 text-sm focus:border-[#F4C542] focus:ring-[#F4C542] bg-white py-2 px-3 outline-none"
-                    >
-                      <option value="">No condition (always show)</option>
-                      {questions.filter(otherQ => otherQ.id !== q.id).map(otherQ => (
-                        <option key={otherQ.id} value={otherQ.id}>
-                          {otherQ.title.substring(0, 40)}{otherQ.title.length > 40 ? '...' : ''}
-                        </option>
-                      ))}
-                    </select>
-                    {q.dependsOn?.questionId && (
-                      <>
-                        <span className="text-sm text-slate-600 shrink-0">equals</span>
-                        <input
-                          type="text"
-                          placeholder="Expected answer..."
-                          value={q.dependsOn.expectedValue}
-                          onChange={(e) => updateQuestion(q.id, { dependsOn: { questionId: q.dependsOn!.questionId, expectedValue: e.target.value } })}
-                          className="flex-1 rounded-lg border border-gray-300 text-sm focus:border-[#F4C542] focus:ring-[#F4C542] bg-white py-2 px-3 outline-none"
-                        />
-                      </>
-                    )}
-                  </div>
+                  
+                  {(() => {
+                    let logicGroup: LogicGroup = { operator: 'AND', rules: [] };
+                    if (q.dependsOn) {
+                      if ('operator' in q.dependsOn) {
+                        logicGroup = q.dependsOn as LogicGroup;
+                      } else if ('questionId' in (q.dependsOn as any)) {
+                        logicGroup = { operator: 'AND', rules: [q.dependsOn as LogicRule] };
+                      }
+                    }
+
+                    const addRule = () => {
+                      const newRules = [...logicGroup.rules, { questionId: '', expectedValue: '' }];
+                      updateQuestion(q.id, { dependsOn: { ...logicGroup, rules: newRules } });
+                    };
+
+                    const updateRule = (rIdx: number, updates: Partial<LogicRule>) => {
+                      const newRules = [...logicGroup.rules];
+                      newRules[rIdx] = { ...newRules[rIdx], ...updates };
+                      updateQuestion(q.id, { dependsOn: { ...logicGroup, rules: newRules } });
+                    };
+
+                    const removeRule = (rIdx: number) => {
+                      const newRules = logicGroup.rules.filter((_, i) => i !== rIdx);
+                      if (newRules.length === 0) {
+                        updateQuestion(q.id, { dependsOn: undefined });
+                      } else {
+                        updateQuestion(q.id, { dependsOn: { ...logicGroup, rules: newRules } });
+                      }
+                    };
+
+                    return (
+                      <div className="space-y-3">
+                        {logicGroup.rules.length > 0 && (
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-sm text-slate-600">Show this question ONLY IF</span>
+                            <select
+                              value={logicGroup.operator}
+                              onChange={(e) => updateQuestion(q.id, { dependsOn: { ...logicGroup, operator: e.target.value as 'AND' | 'OR' } })}
+                              className="appearance-none rounded border border-gray-300 text-sm font-medium focus:border-[#F4C542] focus:ring-[#F4C542] bg-white py-1 px-2 outline-none"
+                            >
+                              <option value="AND">ALL</option>
+                              <option value="OR">ANY</option>
+                            </select>
+                            <span className="text-sm text-slate-600">of the following conditions are met:</span>
+                          </div>
+                        )}
+                        
+                        {logicGroup.rules.map((rule, rIdx) => (
+                          <div key={rIdx} className="flex flex-col sm:flex-row gap-2 items-center bg-white p-2 rounded-lg border border-gray-100 shadow-sm">
+                            <span className="text-xs font-semibold text-slate-400 w-8 text-center">
+                              {rIdx === 0 ? 'IF' : logicGroup.operator}
+                            </span>
+                            <select
+                              value={rule.questionId}
+                              onChange={(e) => updateRule(rIdx, { questionId: e.target.value })}
+                              className="flex-1 appearance-none rounded border border-gray-200 text-sm focus:border-[#F4C542] focus:ring-[#F4C542] bg-slate-50 py-1.5 px-2 outline-none min-w-[150px]"
+                            >
+                              <option value="">Select question...</option>
+                              {questions.filter(otherQ => otherQ.id !== q.id).map(otherQ => (
+                                <option key={otherQ.id} value={otherQ.id}>
+                                  {otherQ.title.substring(0, 40)}{otherQ.title.length > 40 ? '...' : ''}
+                                </option>
+                              ))}
+                            </select>
+                            <span className="text-sm text-slate-500 shrink-0 mx-1">equals</span>
+                            <input
+                              type="text"
+                              placeholder="Expected answer..."
+                              value={rule.expectedValue}
+                              onChange={(e) => updateRule(rIdx, { expectedValue: e.target.value })}
+                              className="flex-1 rounded border border-gray-200 text-sm focus:border-[#F4C542] focus:ring-[#F4C542] bg-slate-50 py-1.5 px-2 outline-none min-w-[150px]"
+                            />
+                            <button 
+                              onClick={() => removeRule(rIdx)}
+                              className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        ))}
+                        
+                        <div className="pt-2">
+                          <button 
+                            onClick={addRule}
+                            className="inline-flex items-center gap-1.5 text-sm text-[#F4C542] hover:text-[#d4a832] font-semibold transition-colors bg-white border border-[#F4C542]/20 rounded-lg px-3 py-1.5 hover:bg-[#F4C542]/5"
+                          >
+                            <Plus size={14} strokeWidth={3} />
+                            Add Condition
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 <div className="pl-0 md:pl-2">
@@ -450,6 +521,127 @@ const SurveyBuilder: React.FC = () => {
                   {q.type === 'number_input' && (
                     <div className="w-32 border-b-2 border-dashed border-gray-200 pb-2 text-gray-400 text-base mt-4">
                       Numeric input...
+                    </div>
+                  )}
+
+                  {q.type === 'slider' && (
+                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 mt-4">
+                      <h4 className="font-semibold text-slate-700 text-sm mb-3">Slider Configuration</h4>
+                      <div className="flex gap-4">
+                        <div className="flex-1">
+                          <label className="block text-xs font-medium text-slate-500 mb-1">Min Value</label>
+                          <input
+                            type="number"
+                            value={q.options?.min || 0}
+                            onChange={(e) => updateQuestion(q.id, { options: { ...q.options, min: Number(e.target.value) } })}
+                            className="w-full rounded border border-gray-300 py-1.5 px-3 text-sm outline-none focus:border-[#F4C542]"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <label className="block text-xs font-medium text-slate-500 mb-1">Max Value</label>
+                          <input
+                            type="number"
+                            value={q.options?.max || 100}
+                            onChange={(e) => updateQuestion(q.id, { options: { ...q.options, max: Number(e.target.value) } })}
+                            className="w-full rounded border border-gray-300 py-1.5 px-3 text-sm outline-none focus:border-[#F4C542]"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <label className="block text-xs font-medium text-slate-500 mb-1">Step</label>
+                          <input
+                            type="number"
+                            value={q.options?.step || 1}
+                            onChange={(e) => updateQuestion(q.id, { options: { ...q.options, step: Number(e.target.value) } })}
+                            className="w-full rounded border border-gray-300 py-1.5 px-3 text-sm outline-none focus:border-[#F4C542]"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {q.type === 'matrix' && (
+                    <div className="bg-slate-50 p-5 rounded-xl border border-slate-200 mt-4 space-y-4">
+                      <h4 className="font-semibold text-slate-700 text-sm">Matrix Configuration</h4>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Rows */}
+                        <div>
+                          <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Statements (Rows)</label>
+                          <div className="space-y-2">
+                            {(q.options?.rows || ['Statement 1']).map((r: string, rIdx: number) => (
+                              <div key={rIdx} className="flex items-center gap-2">
+                                <input
+                                  type="text"
+                                  value={r}
+                                  onChange={(e) => {
+                                    const newRows = [...(q.options?.rows || [])];
+                                    newRows[rIdx] = e.target.value;
+                                    updateQuestion(q.id, { options: { ...q.options, rows: newRows } });
+                                  }}
+                                  className="flex-1 rounded border border-gray-200 py-1.5 px-3 text-sm outline-none focus:border-[#F4C542]"
+                                />
+                                <button
+                                  onClick={() => {
+                                    const newRows = (q.options?.rows || []).filter((_: any, i: number) => i !== rIdx);
+                                    updateQuestion(q.id, { options: { ...q.options, rows: newRows } });
+                                  }}
+                                  className="text-gray-400 hover:text-red-500"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
+                            ))}
+                            <button
+                              onClick={() => {
+                                const newRows = [...(q.options?.rows || []), `Statement ${(q.options?.rows?.length || 1) + 1}`];
+                                updateQuestion(q.id, { options: { ...q.options, rows: newRows } });
+                              }}
+                              className="text-xs font-semibold text-[#F4C542] hover:text-[#d4a832] flex items-center gap-1 mt-1"
+                            >
+                              <Plus size={12} /> Add Row
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Columns */}
+                        <div>
+                          <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Scale Points (Columns)</label>
+                          <div className="space-y-2">
+                            {(q.options?.columns || ['Option 1']).map((c: string, cIdx: number) => (
+                              <div key={cIdx} className="flex items-center gap-2">
+                                <input
+                                  type="text"
+                                  value={c}
+                                  onChange={(e) => {
+                                    const newCols = [...(q.options?.columns || [])];
+                                    newCols[cIdx] = e.target.value;
+                                    updateQuestion(q.id, { options: { ...q.options, columns: newCols } });
+                                  }}
+                                  className="flex-1 rounded border border-gray-200 py-1.5 px-3 text-sm outline-none focus:border-[#F4C542]"
+                                />
+                                <button
+                                  onClick={() => {
+                                    const newCols = (q.options?.columns || []).filter((_: any, i: number) => i !== cIdx);
+                                    updateQuestion(q.id, { options: { ...q.options, columns: newCols } });
+                                  }}
+                                  className="text-gray-400 hover:text-red-500"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
+                            ))}
+                            <button
+                              onClick={() => {
+                                const newCols = [...(q.options?.columns || []), `Option ${(q.options?.columns?.length || 1) + 1}`];
+                                updateQuestion(q.id, { options: { ...q.options, columns: newCols } });
+                              }}
+                              className="text-xs font-semibold text-[#F4C542] hover:text-[#d4a832] flex items-center gap-1 mt-1"
+                            >
+                              <Plus size={12} /> Add Column
+                            </button>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   )}
 

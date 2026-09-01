@@ -8,14 +8,26 @@ export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
 
   console.log('Frontend Token Check:', token ? 'Token Exists' : 'TOKEN MISSING');
 
-  if (!token) {
+  const PUBLIC_ENDPOINTS = [
+    { method: 'GET', endpoint: '/questions' },
+    { method: 'POST', endpoint: '/responses' }
+  ];
+
+  const isPublic = PUBLIC_ENDPOINTS.some(
+    p => endpoint.includes(p.endpoint) && (options.method || 'GET') === p.method
+  );
+
+  if (!token && !isPublic) {
     throw new Error('User not authenticated');
   }
 
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${token}`
+    'Content-Type': 'application/json'
   };
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
 
   // Merge any custom headers provided in options
   if (options.headers) {

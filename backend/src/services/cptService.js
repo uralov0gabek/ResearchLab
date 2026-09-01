@@ -111,8 +111,17 @@ const calculateCPTParameters = (answers, cptTasks) => {
   };
 
   cptTasks.forEach(task => {
-    if (blocks[task.title.split('_')[0]]) {
-       blocks[task.title.split('_')[0]].push(task);
+    // Map properties from new question schema
+    const title = task.question_text || '';
+    const blockPrefix = title.split('_')[0];
+    
+    // Inject raw data back into the task for the calculator
+    if (task.options && task.options[0] && task.options[0].raw) {
+      Object.assign(task, task.options[0].raw);
+    }
+    
+    if (blocks[blockPrefix]) {
+       blocks[blockPrefix].push(task);
     }
   });
 

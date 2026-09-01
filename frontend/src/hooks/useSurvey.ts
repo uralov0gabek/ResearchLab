@@ -77,8 +77,31 @@ export const useSurvey = () => {
   const visibleQuestions = useMemo(() => {
     return questions.filter(q => {
       if (!q.dependsOn) return true;
-      const dependentAnswer = answers[q.dependsOn.questionId];
-      return dependentAnswer === q.dependsOn.expectedValue;
+
+      // Backward compatibility: old single rule format
+      if ('questionId' in (q.dependsOn as any)) {
+        const dependentAnswer = answers[(q.dependsOn as any).questionId];
+        return dependentAnswer === (q.dependsOn as any).expectedValue;
+      }
+
+      // New LogicGroup format
+      if ('operator' in (q.dependsOn as any) && Array.isArray((q.dependsOn as any).rules)) {
+        const group = q.dependsOn as any;
+        if (group.rules.length === 0) return true;
+        
+        const results = group.rules.map((rule: any) => {
+          const dependentAnswer = answers[rule.questionId];
+          return dependentAnswer === rule.expectedValue;
+        });
+
+        if (group.operator === 'OR') {
+          return results.some((r: boolean) => r);
+        } else {
+          return results.every((r: boolean) => r); // Default to AND
+        }
+      }
+
+      return true;
     });
   }, [answers, questions]);
 

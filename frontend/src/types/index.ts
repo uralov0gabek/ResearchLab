@@ -1,4 +1,4 @@
-export type QuestionType = 'short_text' | 'single_choice' | 'multiple_choice' | 'number_input' | 'lottery';
+export type QuestionType = 'short_text' | 'single_choice' | 'multiple_choice' | 'number_input' | 'lottery' | 'matrix' | 'slider';
 
 export interface LotteryRow {
   id?: number;
@@ -7,8 +7,10 @@ export interface LotteryRow {
 }
 
 export interface QuestionCondition {
-  questionId: string;
-  expectedValue: string;
+  operator?: 'AND' | 'OR';
+  rules?: any[];
+  questionId?: string;
+  expectedValue?: string;
 }
 
 export interface Question {
@@ -27,7 +29,7 @@ export interface LotteryResponse {
   rows: LotteryRow[];
 }
 
-export type AnswerValue = string | string[] | number | LotteryResponse | undefined;
+export type AnswerValue = string | string[] | number | LotteryResponse | Record<string, string> | undefined;
 
 export interface SessionData {
   sessionId: string;
