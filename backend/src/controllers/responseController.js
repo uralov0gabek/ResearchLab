@@ -7,6 +7,10 @@ const submitResponse = async (req, res, next) => {
   try {
     const { answers, userId } = req.body;
     
+    if (!userId) {
+      return res.status(400).json({ error: 'Missing userId (session ID)' });
+    }
+    
     await responseService.saveResponse(userId, answers);
 
     res.json({ success: true });
