@@ -26,7 +26,6 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
           onChange={(e) => onAnswerChange(question.id, e.target.value)}
           className="w-full text-xl p-4 border-b-2 border-gray-200 focus:border-blue-500 outline-none bg-transparent transition-colors"
           placeholder="Type your answer here..."
-          autoFocus
         />
         {validationError && <p className="text-red-500 text-sm mt-2">{validationError}</p>}
       </div>
@@ -42,7 +41,6 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
           onChange={(e) => onAnswerChange(question.id, e.target.value)}
           className="w-full text-xl p-4 border-b-2 border-gray-200 focus:border-blue-500 outline-none bg-transparent transition-colors"
           placeholder="Type your number here..."
-          autoFocus
         />
         {validationError && <p className="text-red-500 text-sm mt-2">{validationError}</p>}
       </div>
