@@ -20,6 +20,7 @@ export interface Question {
   block_name: string;
   options?: any;
   dependsOn?: QuestionCondition;
+  required?: boolean;
 }
 
 export interface LotteryResponse {

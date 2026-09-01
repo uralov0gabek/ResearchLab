@@ -14,7 +14,6 @@ const PublicSurvey: React.FC = () => {
     currentStep,
     answers,
     questions,
-    visibleQuestions,
     isLoading,
     isSubmitting,
     isSubmitted,
