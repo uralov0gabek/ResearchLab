@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Plus, Trash2, ArrowUp, ArrowDown, Save, CheckSquare, Loader2, LayoutGrid
+  Plus, Trash2, ArrowUp, ArrowDown, Save, CheckSquare, Loader2, LayoutGrid, CheckCircle,
+  CircleDot, CheckSquare as CheckSquareIcon, Type, Hash, Dices, ChevronDown
 } from 'lucide-react';
 import { apiFetch } from '../../services/api/apiClient';
 
@@ -19,12 +20,63 @@ interface Question {
   };
 }
 
+const QuestionTypeDropdown = ({ value, onChange }: { value: QuestionType, onChange: (v: QuestionType) => void }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const types = [
+    { value: 'single_choice', label: 'Single Choice', icon: CircleDot },
+    { value: 'multiple_choice', label: 'Multiple Choice', icon: CheckSquareIcon },
+    { value: 'short_text', label: 'Short Text', icon: Type },
+    { value: 'number_input', label: 'Number Input', icon: Hash },
+    { value: 'lottery', label: 'Lottery Choice (CPT)', icon: Dices },
+  ];
+  
+  const selected = types.find(t => t.value === value) || types[0];
+  const Icon = selected.icon;
+
+  return (
+    <div className="relative w-full md:w-56 shrink-0">
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        onBlur={() => setTimeout(() => setIsOpen(false), 200)}
+        className="w-full flex items-center justify-between rounded-xl border border-gray-200 bg-white py-2.5 pl-3 pr-3 text-sm outline-none shadow-sm font-medium text-slate-700 hover:border-[#F4C542] focus:border-[#F4C542] focus:ring-1 focus:ring-[#F4C542] transition-all"
+      >
+        <span className="flex items-center gap-2">
+          <Icon size={16} className="text-[#F4C542]" />
+          {selected.label}
+        </span>
+        <ChevronDown size={16} className="text-slate-400" />
+      </button>
+      
+      {isOpen && (
+        <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg py-1 overflow-hidden">
+          {types.map(t => {
+            const TIcon = t.icon;
+            return (
+              <button
+                key={t.value}
+                type="button"
+                onMouseDown={(e) => { e.preventDefault(); onChange(t.value as QuestionType); setIsOpen(false); }}
+                className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left hover:bg-slate-50 transition-colors ${value === t.value ? 'bg-[#F4C542]/5 text-[#c79a20] font-semibold' : 'text-slate-700'}`}
+              >
+                <TIcon size={16} className={value === t.value ? 'text-[#F4C542]' : 'text-slate-400'} />
+                {t.label}
+              </button>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const SurveyBuilder: React.FC = () => {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [activeBlock, setActiveBlock] = useState<string | null>(null);
   
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
 
   const fetchQuestions = async () => {
     try {
@@ -159,11 +211,13 @@ const SurveyBuilder: React.FC = () => {
         body: JSON.stringify({ questionsToUpsert, idsToDelete })
       });
 
-      alert('Saved successfully!');
+      setSaveMessage('Saved successfully!');
+      setTimeout(() => setSaveMessage(null), 3000);
       fetchQuestions(); 
     } catch (error) {
       console.error('Save Error:', error);
-      alert('Failed to save questions.');
+      setSaveMessage('Failed to save questions.');
+      setTimeout(() => setSaveMessage(null), 3000);
     } finally {
       setIsSaving(false);
     }
@@ -218,16 +272,23 @@ const SurveyBuilder: React.FC = () => {
               <p className="text-gray-600 font-medium">Select a block to edit</p>
             )}
           </div>
-          <button 
-            onClick={handleSave}
-            disabled={isSaving || isLoading}
-            className={`flex items-center gap-2 px-6 py-2.5 rounded-lg transition-colors shadow-md font-medium shrink-0 ${
-              isSaving || isLoading ? 'bg-slate-700 text-slate-300 cursor-not-allowed' : 'bg-slate-900 text-white hover:bg-slate-800'
-            }`}
-          >
-            {isSaving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
-            {isSaving ? 'Saving...' : 'Save Changes'}
-          </button>
+          <div className="flex items-center gap-4 shrink-0">
+            {saveMessage && (
+              <span className={`font-medium text-sm flex items-center gap-1.5 ${saveMessage.includes('Failed') ? 'text-red-600' : 'text-green-600'} animate-in fade-in duration-300`}>
+                <CheckCircle size={16} /> {saveMessage}
+              </span>
+            )}
+            <button 
+              onClick={handleSave}
+              disabled={isSaving || isLoading}
+              className={`flex items-center gap-2 px-6 py-2.5 rounded-lg transition-colors shadow-md font-medium shrink-0 ${
+                isSaving || isLoading ? 'bg-slate-700 text-slate-300 cursor-not-allowed' : 'bg-slate-900 text-white hover:bg-slate-800'
+              }`}
+            >
+              {isSaving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+              {isSaving ? 'Saving...' : 'Save Changes'}
+            </button>
+          </div>
         </div>
         
         {/* Questions */}
@@ -297,19 +358,10 @@ const SurveyBuilder: React.FC = () => {
                       className="w-full text-xl font-semibold bg-transparent border-none focus:ring-0 p-0 placeholder:text-gray-300 text-slate-900 focus:outline-none"
                     />
                   </div>
-                  <div className="w-full md:w-56 shrink-0">
-                    <select
-                      value={q.type}
-                      onChange={(e) => updateQuestion(q.id, { type: e.target.value as QuestionType })}
-                      className="w-full appearance-none rounded-xl border border-gray-200 text-sm focus:border-[#F4C542] focus:ring-[#F4C542] bg-white py-2.5 pl-3 pr-8 outline-none shadow-sm font-medium text-slate-700 cursor-pointer"
-                    >
-                      <option value="single_choice">Single Choice</option>
-                      <option value="multiple_choice">Multiple Choice</option>
-                      <option value="short_text">Short Text</option>
-                      <option value="number_input">Number Input</option>
-                      <option value="lottery">Lottery Choice (CPT)</option>
-                    </select>
-                  </div>
+                  <QuestionTypeDropdown
+                    value={q.type}
+                    onChange={(val) => updateQuestion(q.id, { type: val })}
+                  />
                 </div>
 
                 <div className="mb-6 bg-slate-50 p-4 rounded-xl border border-slate-200">
