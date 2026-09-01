@@ -27,7 +27,10 @@ const Home: React.FC = () => {
               This research explores how people in Uzbekistan and post-Soviet Central Asia evaluate gains, losses, uncertainty, startup opportunities, and investment decisions.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
-              <Link to="/survey" className="inline-flex justify-center items-center gap-2 px-8 py-4 rounded-xl bg-[#F4C542] text-slate-900 font-semibold text-lg hover:bg-[#e3b632] hover:-translate-y-0.5 transition-all shadow-[0_8px_20px_-6px_rgba(244,197,66,0.5)]">
+              <Link 
+                to="/survey" 
+                onClick={() => sessionStorage.removeItem('survey_session_data')}
+                className="inline-flex justify-center items-center gap-2 px-8 py-4 rounded-xl bg-[#F4C542] text-slate-900 font-semibold text-lg hover:bg-[#e3b632] hover:-translate-y-0.5 transition-all shadow-[0_8px_20px_-6px_rgba(244,197,66,0.5)]">
                 Take the Survey
                 <ArrowRight size={20} />
               </Link>
@@ -142,7 +145,10 @@ const Home: React.FC = () => {
           <p className="text-xl text-gray-300 mb-10 max-w-2xl mx-auto">
             Your insights are crucial. Participation is completely voluntary, 100% anonymous, and takes approximately 10 minutes to complete.
           </p>
-          <Link to="/survey" className="inline-flex justify-center items-center gap-2 px-10 py-5 rounded-xl bg-[#F4C542] text-slate-900 font-bold text-xl hover:bg-[#e3b632] hover:-translate-y-1 transition-all shadow-[0_8px_20px_-6px_rgba(244,197,66,0.3)]">
+          <Link 
+            to="/survey" 
+            onClick={() => sessionStorage.removeItem('survey_session_data')}
+            className="inline-flex justify-center items-center gap-2 px-10 py-5 rounded-xl bg-[#F4C542] text-slate-900 font-bold text-xl hover:bg-[#e3b632] hover:-translate-y-1 transition-all shadow-[0_8px_20px_-6px_rgba(244,197,66,0.3)]">
             Start Survey
             <ArrowRight size={24} />
           </Link>
