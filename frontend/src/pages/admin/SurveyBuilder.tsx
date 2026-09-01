@@ -77,6 +77,9 @@ const SurveyBuilder: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  
+  const [showAddBlockModal, setShowAddBlockModal] = useState(false);
+  const [newBlockName, setNewBlockName] = useState('');
 
   const fetchQuestions = async () => {
     try {
@@ -116,9 +119,8 @@ const SurveyBuilder: React.FC = () => {
   const uniqueBlocks = Array.from(new Set(questions.map(q => q.block_name)));
 
   const handleAddBlock = () => {
-    const title = prompt("Enter new block name:");
-    if (!title) return;
-    setActiveBlock(title);
+    setNewBlockName('');
+    setShowAddBlockModal(true);
   };
 
   const addQuestion = () => {
@@ -494,6 +496,51 @@ const SurveyBuilder: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Add Block Modal */}
+      {showAddBlockModal && (
+        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl">
+            <h3 className="text-xl font-bold text-slate-900 mb-4">Enter new block name</h3>
+            <input
+              type="text"
+              value={newBlockName}
+              onChange={(e) => setNewBlockName(e.target.value)}
+              placeholder="e.g. Founder Questions"
+              className="w-full border border-gray-300 rounded-xl px-4 py-3 mb-6 focus:outline-none focus:border-[#F4C542] focus:ring-1 focus:ring-[#F4C542]"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && newBlockName.trim()) {
+                  setActiveBlock(newBlockName.trim());
+                  setShowAddBlockModal(false);
+                  setNewBlockName('');
+                }
+              }}
+            />
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowAddBlockModal(false)}
+                className="px-5 py-2.5 rounded-xl font-medium text-slate-600 hover:bg-slate-100 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (newBlockName.trim()) {
+                    setActiveBlock(newBlockName.trim());
+                    setShowAddBlockModal(false);
+                    setNewBlockName('');
+                  }
+                }}
+                disabled={!newBlockName.trim()}
+                className="px-5 py-2.5 rounded-xl font-medium bg-[#F4C542] text-slate-900 hover:bg-[#e3b532] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
