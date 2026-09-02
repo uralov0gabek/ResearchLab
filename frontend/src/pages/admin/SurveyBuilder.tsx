@@ -1,4 +1,3 @@
-// @ts-nocheck
 import React, { useState, useEffect } from 'react';
 import { 
   Plus, Trash2, ArrowUp, ArrowDown, Save, CheckSquare, Loader2, LayoutGrid, CheckCircle,

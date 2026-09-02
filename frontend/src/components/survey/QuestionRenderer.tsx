@@ -1,4 +1,3 @@
-// @ts-nocheck
 import React from 'react';
 import { CheckCircle } from 'lucide-react';
 import type { Question, AnswerValue, LotteryRow } from '../../types';

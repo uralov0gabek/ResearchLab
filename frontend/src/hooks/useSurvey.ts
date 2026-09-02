@@ -64,7 +64,7 @@ export const useSurvey = () => {
         setSessionId(parsed.sessionId || crypto.randomUUID());
         setCurrentStep(parsed.currentStep || 0);
         setAnswers(parsed.answers || {});
-      } catch (e) {
+      } catch {
         setSessionId(crypto.randomUUID());
       }
     } else {

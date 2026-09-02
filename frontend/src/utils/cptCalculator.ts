@@ -31,8 +31,8 @@ export const calculateCPTParameters = (answers: Record<string, unknown>) => {
 
   // As a placeholder calculation until the exact lottery values are supplied:
   let alphaSum = 0;
-  let betaSum = 0;
-  let lambdaSum = 0;
+  const betaSum = 0;
+  const lambdaSum = 0;
   let count = 0;
 
   // Iterate over answers, identify lottery blocks, and calculate
