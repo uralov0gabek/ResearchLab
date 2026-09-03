@@ -2,11 +2,13 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { CheckCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import Navbar from '../Navbar';
 import Footer from '../Footer';
 
 export const SurveyCompletion: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 text-gray-800 font-sans">
@@ -19,9 +21,9 @@ export const SurveyCompletion: React.FC = () => {
           className="max-w-md w-full bg-white p-8 rounded-2xl shadow-sm border border-gray-100 text-center mt-20"
         >
           <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-6" />
-          <h2 className="text-3xl font-bold text-slate-900 mb-4">Thank You!</h2>
+          <h2 className="text-3xl font-bold text-slate-900 mb-4">{t('Thank You')}!</h2>
           <p className="text-gray-600 mb-8">
-            Your responses have been recorded anonymously. We appreciate your contribution to this research.
+            {t('survey_completed')}
           </p>
           <button
             onClick={() => navigate('/')}

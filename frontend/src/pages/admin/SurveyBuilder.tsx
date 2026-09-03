@@ -4,6 +4,8 @@ import {
   CircleDot, CheckSquare as CheckSquareIcon, Type, Hash, Dices, ChevronDown
 } from 'lucide-react';
 import { apiFetch } from '../../services/api/apiClient';
+import { useTranslation } from 'react-i18next';
+import { getLocalizedText } from '../../utils/localization';
 
 type QuestionType = 'single_choice' | 'multiple_choice' | 'short_text' | 'number_input' | 'lottery' | 'matrix' | 'slider';
 
@@ -80,6 +82,7 @@ const QuestionTypeDropdown = ({ value, onChange }: { value: QuestionType, onChan
 };
 
 const SurveyBuilder: React.FC = () => {
+  const { t, i18n } = useTranslation();
   const [questions, setQuestions] = useState<Question[]>([]);
   const [activeBlock, setActiveBlock] = useState<string | null>(null);
   
@@ -96,11 +99,11 @@ const SurveyBuilder: React.FC = () => {
       const data = await apiFetch(`/questions`);
       
       if (data) {
-        const loadedQuestions = data.map((row: Record<string, unknown>) => ({
+        const loadedQuestions = data.map((row: any) => ({
           id: String(row.id),
-          block_name: String(row.block_name || 'Default Block'),
+          block_name: getLocalizedText(row.block_name, i18n.language),
           type: String(row.type) as QuestionType,
-          title: String(row.question_text || ''),
+          title: getLocalizedText(row.question_text, i18n.language),
           options: row.options || [],
           required: Boolean(row.required),
           dependsOn: row.conditional_logic as LogicGroup | LogicRule | undefined
@@ -277,7 +280,7 @@ const SurveyBuilder: React.FC = () => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 max-w-4xl mx-auto">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900 mb-1">Builder Canvas</h1>
+            <h1 className="text-3xl font-bold text-slate-900 mb-1">{t('Survey Builder')}</h1>
             {activeBlock ? (
               <p className="text-gray-600 font-medium">Editing: <span className="text-slate-900">{activeBlock}</span></p>
             ) : (
@@ -298,7 +301,7 @@ const SurveyBuilder: React.FC = () => {
               }`}
             >
               {isSaving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
-              {isSaving ? 'Saving...' : 'Save Changes'}
+              {isSaving ? 'Saving...' : t('Save Changes')}
             </button>
           </div>
         </div>
@@ -432,14 +435,14 @@ const SurveyBuilder: React.FC = () => {
                         )}
                         
                         {logicGroup.rules.map((rule, rIdx) => (
-                          <div key={rIdx} className="flex flex-col sm:flex-row gap-2 items-center bg-white p-2 rounded-lg border border-gray-100 shadow-sm">
-                            <span className="text-xs font-semibold text-slate-400 w-8 text-center">
+                          <div key={rIdx} className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center bg-white p-3 sm:p-2 rounded-lg border border-gray-100 shadow-sm">
+                            <span className="text-xs font-semibold text-slate-400 sm:w-8 text-left sm:text-center">
                               {rIdx === 0 ? 'IF' : logicGroup.operator}
                             </span>
                             <select
                               value={rule.questionId}
                               onChange={(e) => updateRule(rIdx, { questionId: e.target.value })}
-                              className="flex-1 appearance-none rounded border border-gray-200 text-sm focus:border-[#F4C542] focus:ring-[#F4C542] bg-slate-50 py-1.5 px-2 outline-none min-w-[150px]"
+                              className="w-full sm:flex-1 appearance-none rounded border border-gray-200 text-sm focus:border-[#F4C542] focus:ring-[#F4C542] bg-slate-50 py-2 sm:py-1.5 px-3 sm:px-2 outline-none sm:min-w-[150px]"
                             >
                               <option value="">Select question...</option>
                               {questions.filter(otherQ => otherQ.id !== q.id).map(otherQ => (
@@ -448,27 +451,29 @@ const SurveyBuilder: React.FC = () => {
                                 </option>
                               ))}
                             </select>
-                            <span className="text-sm text-slate-500 shrink-0 mx-1">equals</span>
+                            <span className="text-sm text-slate-500 shrink-0 sm:mx-1 self-start sm:self-auto">equals</span>
                             <input
                               type="text"
                               placeholder="Expected answer..."
                               value={rule.expectedValue}
                               onChange={(e) => updateRule(rIdx, { expectedValue: e.target.value })}
-                              className="flex-1 rounded border border-gray-200 text-sm focus:border-[#F4C542] focus:ring-[#F4C542] bg-slate-50 py-1.5 px-2 outline-none min-w-[150px]"
+                              className="w-full sm:flex-1 rounded border border-gray-200 text-sm focus:border-[#F4C542] focus:ring-[#F4C542] bg-slate-50 py-2 sm:py-1.5 px-3 sm:px-2 outline-none sm:min-w-[150px]"
                             />
-                            <button 
-                              onClick={() => removeRule(rIdx)}
-                              className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
-                            >
-                              <Trash2 size={14} />
-                            </button>
+                            <div className="flex justify-end mt-1 sm:mt-0">
+                              <button 
+                                onClick={() => removeRule(rIdx)}
+                                className="p-2 sm:p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
+                              >
+                                <Trash2 size={16} className="sm:w-3.5 sm:h-3.5" />
+                              </button>
+                            </div>
                           </div>
                         ))}
                         
                         <div className="pt-2">
                           <button 
                             onClick={addRule}
-                            className="inline-flex items-center gap-1.5 text-sm text-[#F4C542] hover:text-[#d4a832] font-semibold transition-colors bg-white border border-[#F4C542]/20 rounded-lg px-3 py-1.5 hover:bg-[#F4C542]/5"
+                            className="inline-flex items-center justify-center w-full sm:w-auto gap-1.5 text-sm text-[#F4C542] hover:text-[#d4a832] font-semibold transition-colors bg-white border border-[#F4C542]/20 rounded-lg px-3 py-2 sm:py-1.5 hover:bg-[#F4C542]/5"
                           >
                             <Plus size={14} strokeWidth={3} />
                             Add Condition

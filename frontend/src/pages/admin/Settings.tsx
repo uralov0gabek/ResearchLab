@@ -2,8 +2,10 @@ import React, { useState, useEffect } from "react";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../context/AuthContext";
 import { Shield, Key, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 const Settings: React.FC = () => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -79,7 +81,7 @@ const Settings: React.FC = () => {
             <Shield className="w-6 h-6 text-blue-600" />
             <div>
               <h2 className="text-xl font-bold text-slate-800">
-                Admin Profile
+                {t('Admin Profile')}
               </h2>
               <p className="text-sm text-slate-500">
                 Manage your administrative account details.
@@ -120,7 +122,7 @@ const Settings: React.FC = () => {
             <Key className="w-6 h-6 text-[#F4C542]" />
             <div>
               <h2 className="text-xl font-bold text-slate-800">
-                Security Settings
+                {t('Security Settings')}
               </h2>
               <p className="text-sm text-slate-500">
                 Update your password to keep your account secure.

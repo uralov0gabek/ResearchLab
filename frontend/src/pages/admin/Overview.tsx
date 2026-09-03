@@ -1,6 +1,8 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 export const Overview: React.FC = () => {
+  const { t } = useTranslation();
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       <div>
@@ -10,7 +12,7 @@ export const Overview: React.FC = () => {
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-card/50 backdrop-blur-xl border border-white/10 p-6 rounded-2xl shadow-sm hover:shadow-md transition-all">
-          <h3 className="font-medium text-muted-foreground mb-2">Total Responses</h3>
+          <h3 className="font-medium text-muted-foreground mb-2">{t('Total Responses')}</h3>
           <p className="text-4xl font-bold bg-gradient-to-br from-primary to-primary/60 bg-clip-text text-transparent">1,248</p>
         </div>
         <div className="bg-card/50 backdrop-blur-xl border border-white/10 p-6 rounded-2xl shadow-sm hover:shadow-md transition-all">

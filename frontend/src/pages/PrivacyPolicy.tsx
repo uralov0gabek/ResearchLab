@@ -3,8 +3,10 @@ import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { ArrowLeft } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const PrivacyPolicy: React.FC = () => {
+  const { t } = useTranslation();
   return (
     <div className="min-h-screen bg-[#FFFDF5] text-gray-800 font-sans selection:bg-[#F4C542] selection:text-slate-900 flex flex-col pt-20">
       <Navbar />
@@ -13,11 +15,11 @@ const PrivacyPolicy: React.FC = () => {
         <div className="max-w-3xl mx-auto prose prose-slate max-w-none">
           <Link to="/" className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-slate-900 mb-8 transition-colors no-underline">
             <ArrowLeft size={16} />
-            Back to Home
+            {t('Back to Home')}
           </Link>
           
           <div className="bg-white p-8 md:p-12 rounded-3xl shadow-[0_4px_24px_-8px_rgba(0,0,0,0.05)] border border-gray-100">
-            <h1 className="text-4xl font-extrabold text-slate-900 mb-8">Privacy Policy</h1>
+            <h1 className="text-4xl font-extrabold text-slate-900 mb-8">{t('Privacy Policy')}</h1>
             
             <p className="text-lg text-gray-600 mb-6 leading-relaxed">
               At Research Lab, we are committed to protecting your privacy and ensuring the confidentiality of the information you provide during our research studies. This Privacy Policy outlines how we collect, use, and protect your data.

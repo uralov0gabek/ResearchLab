@@ -9,12 +9,16 @@ import {
   LineChart,
   Settings as SettingsIcon,
   LogOut,
-  Menu
+  Menu,
+  Globe
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const AdminLayout: React.FC = () => {
   const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isLangOpen, setIsLangOpen] = useState(false);
+  const { t, i18n } = useTranslation();
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -22,13 +26,19 @@ const AdminLayout: React.FC = () => {
   };
 
   const navItems = [
-    { name: 'Overview', path: '/admin', icon: LayoutDashboard },
-    { name: 'Survey Builder', path: '/admin/survey-builder', icon: FileText },
-    { name: 'CPT Task Builder', path: '/admin/cpt-builder', icon: MousePointer2 },
-    { name: 'Responses', path: '/admin/responses', icon: Users },
+    { name: t('Overview') || 'Overview', path: '/admin', icon: LayoutDashboard },
+    { name: t('Survey Builder') || 'Survey Builder', path: '/admin/survey-builder', icon: FileText },
+    { name: t('CPT Task Builder') || 'CPT Task Builder', path: '/admin/cpt-builder', icon: MousePointer2 },
+    { name: t('Responses') || 'Responses', path: '/admin/responses', icon: Users },
     { name: 'Results', path: '/admin/results', icon: LineChart },
-    { name: 'Settings', path: '/admin/settings', icon: SettingsIcon },
+    { name: t('Settings') || 'Settings', path: '/admin/settings', icon: SettingsIcon },
   ];
+
+  const changeLanguage = (lng: string) => {
+    i18n.changeLanguage(lng);
+    localStorage.setItem('i18nextLng', lng);
+    setIsLangOpen(false);
+  };
 
   return (
     <div className="min-h-screen bg-[#FFFDF5] font-sans">
@@ -48,7 +58,7 @@ const AdminLayout: React.FC = () => {
       >
         <div className="p-6">
           <Link to="/" className="group block cursor-pointer">
-            <h1 className="text-xl font-bold tracking-tight text-white group-hover:text-[#F4C542] transition-colors">Research Lab</h1>
+            <div className="text-xl font-bold tracking-tight text-white group-hover:text-[#F4C542] transition-colors">{t('Research Lab')}</div>
             <p className="text-xs text-slate-400 mt-1 group-hover:text-slate-300 transition-colors">Loss Aversion Platform</p>
           </Link>
         </div>
@@ -77,13 +87,31 @@ const AdminLayout: React.FC = () => {
           })}
         </nav>
 
-        <div className="p-4 border-t border-slate-800">
+        <div className="p-4 border-t border-slate-800 space-y-4">
+          <div className="relative">
+            <button 
+              onClick={() => setIsLangOpen(!isLangOpen)}
+              className="flex items-center w-full px-3 py-2.5 text-sm font-medium text-slate-300 rounded-lg hover:bg-slate-800 hover:text-white transition-colors"
+              aria-haspopup="true"
+            >
+              <Globe className="w-5 h-5 mr-3 flex-shrink-0" />
+              <span className="truncate uppercase">{i18n.language}</span>
+            </button>
+            {isLangOpen && (
+              <div className="absolute bottom-full left-0 mb-2 w-full bg-slate-800 rounded-lg shadow-lg py-1 border border-slate-700 z-50 overflow-hidden">
+                <button onClick={() => changeLanguage('uz')} className="block w-full text-left px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white">O'zbekcha</button>
+                <button onClick={() => changeLanguage('en')} className="block w-full text-left px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white">English</button>
+                <button onClick={() => changeLanguage('ru')} className="block w-full text-left px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white">Русский</button>
+              </div>
+            )}
+          </div>
+
           <button
             onClick={handleSignOut}
             className="flex items-center w-full px-3 py-2.5 text-sm font-medium text-slate-300 rounded-lg hover:bg-slate-800 hover:text-white transition-colors"
           >
             <LogOut className="w-5 h-5 mr-3 flex-shrink-0" />
-            Sign Out
+            {t('Sign Out')}
           </button>
         </div>
       </div>
@@ -95,10 +123,11 @@ const AdminLayout: React.FC = () => {
           <button 
             onClick={() => setIsSidebarOpen(true)}
             className="p-2 -ml-2 text-slate-600 hover:text-slate-900 focus:outline-none"
+            aria-label="Toggle menu"
           >
             <Menu className="w-6 h-6" />
           </button>
-          <span className="ml-2 font-semibold text-slate-800 truncate">Research Lab</span>
+          <span className="ml-2 font-semibold text-slate-800 truncate">{t('Research Lab')}</span>
         </header>
 
         {/* Main Content */}

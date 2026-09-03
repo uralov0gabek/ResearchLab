@@ -1,9 +1,12 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { TrendingUp, AlertTriangle, Lightbulb, ArrowRight } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+
 const Home: React.FC = () => {
+  const { t } = useTranslation();
   return (
     <div className="min-h-screen bg-[#FFFDF5] text-gray-800 font-sans selection:bg-[#F4C542] selection:text-slate-900 overflow-x-hidden pt-20">
       {/* Navigation Bar */}
@@ -21,7 +24,7 @@ const Home: React.FC = () => {
               Behavioral Economics Study 2026
             </div>
             <h1 className="text-4xl sm:text-5xl lg:text-7xl font-extrabold text-slate-900 tracking-tight leading-[1.1] mb-8">
-              Understanding Risk, Loss, and Ambition Across <span className="text-transparent bg-clip-text bg-gradient-to-r from-slate-900 to-[#F4C542]">Generations</span>
+              {t('Discovering Generations')}
             </h1>
             <p className="text-xl text-gray-600 leading-relaxed mb-10 max-w-2xl">
               This research explores how people in Uzbekistan and post-Soviet Central Asia evaluate gains, losses, uncertainty, startup opportunities, and investment decisions.
@@ -50,7 +53,7 @@ const Home: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-16 items-center">
             <div>
-              <h2 className="text-3xl lg:text-4xl font-bold text-slate-900 mb-6">About the Research</h2>
+              <h2 className="text-3xl lg:text-4xl font-bold text-slate-900 mb-6">{t('About The Research')}</h2>
               <p className="text-lg text-gray-600 mb-6 leading-relaxed">
                 We are conducting a comprehensive comparative analysis of risk behaviors and loss aversion across multiple generations (Boomers, Gen X, Millennials, and Gen Z) in Central Asia.
               </p>

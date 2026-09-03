@@ -1,15 +1,18 @@
 import React from 'react';
 import { ArrowRight, ArrowLeft, CheckCircle, X, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { useSurvey } from '../hooks/useSurvey';
 import { SurveyLoader } from '../components/survey/SurveyLoader';
 import { SurveyCompletion } from '../components/survey/SurveyCompletion';
 import { QuestionRenderer } from '../components/survey/QuestionRenderer';
+import { getLocalizedText } from '../utils/localization';
 import type { LotteryRow, LotteryResponse } from '../types';
 
 const PublicSurvey: React.FC = () => {
+  const { t, i18n } = useTranslation();
   const {
     currentStep,
     answers,
@@ -83,9 +86,9 @@ const PublicSurvey: React.FC = () => {
           
           <div className="mb-10">
             <div className="flex justify-between items-center mb-2">
-              <div className="flex justify-between w-full text-sm font-medium text-gray-500 mr-4">
-                <span>{currentBlockName}</span>
-                <span>Block {currentStep + 1} of {activeBlocks.length} ({Math.round(((currentStep + 1) / activeBlocks.length) * 100)}% completed)</span>
+              <div className="flex flex-col sm:flex-row sm:justify-between w-full text-xs sm:text-sm font-medium text-gray-500 mr-4 gap-1 sm:gap-0">
+                <span className="truncate max-w-[200px] sm:max-w-none">{getLocalizedText(currentBlockName, i18n.language)}</span>
+                <span>{t('Block')} {currentStep + 1} of {activeBlocks.length} ({Math.round(((currentStep + 1) / activeBlocks.length) * 100)}% completed)</span>
               </div>
               <button 
                 onClick={handleExit}
@@ -103,7 +106,7 @@ const PublicSurvey: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-white p-8 sm:p-12 rounded-3xl shadow-sm border border-slate-200 flex-grow flex flex-col relative overflow-hidden">
+          <div className="bg-white p-5 sm:p-8 md:p-12 rounded-2xl md:rounded-3xl shadow-sm border border-slate-200 flex-grow flex flex-col relative overflow-hidden">
             <AnimatePresence mode="wait">
               <motion.div
                 key={currentStep}
@@ -116,9 +119,9 @@ const PublicSurvey: React.FC = () => {
                 <div className="flex-grow space-y-12">
                   {currentBlockQuestions.map((q, idx) => (
                     <div key={q.id} className="border-b border-slate-100 pb-10 last:border-0 last:pb-0">
-                      <h2 className="text-xl sm:text-2xl font-semibold text-slate-900 mb-6 leading-snug">
+                      <h2 className="text-lg sm:text-xl md:text-2xl font-semibold text-slate-900 mb-4 sm:mb-6 leading-snug">
                         <span className="text-slate-400 mr-2">{idx + 1}.</span> 
-                        {q.text} {q.required && <span className="text-red-500 ml-1">*</span>}
+                        {getLocalizedText(q.text, i18n.language)} {q.required && <span className="text-red-500 ml-1">*</span>}
                       </h2>
                       <QuestionRenderer 
                         question={q}
@@ -132,37 +135,37 @@ const PublicSurvey: React.FC = () => {
               </motion.div>
             </AnimatePresence>
 
-            <div className="mt-12 pt-6 border-t border-slate-100 flex items-center justify-between relative z-10">
+            <div className="mt-8 sm:mt-12 pt-6 border-t border-slate-100 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between relative z-10 gap-4 sm:gap-0">
               <button
                 onClick={handleBack}
                 disabled={currentStep === 0}
-                className={`inline-flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-colors ${
-                  currentStep === 0 ? 'text-gray-300 cursor-not-allowed' : 'text-slate-600 hover:bg-slate-100'
+                className={`inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-medium transition-colors ${
+                  currentStep === 0 ? 'text-gray-300 cursor-not-allowed hidden sm:inline-flex' : 'text-slate-600 hover:bg-slate-100'
                 }`}
               >
                 <ArrowLeft size={20} />
-                Back
+                {t('Back')}
               </button>
 
               {currentStep < activeBlocks.length - 1 ? (
                 <button
                   onClick={handleNext}
                   disabled={!isBlockValid}
-                  className={`inline-flex items-center gap-2 px-8 py-3 rounded-xl font-bold transition-all shadow-sm ${
+                  className={`inline-flex items-center justify-center gap-2 px-8 py-3 rounded-xl font-bold transition-all shadow-sm w-full sm:w-auto ${
                     isBlockValid
                       ? 'bg-blue-600 text-white hover:bg-blue-700'
                       : 'bg-slate-200 text-slate-400 opacity-50 cursor-not-allowed'
                   }`}
                 >
-                  Next
+                  {t('Next')}
                   <ArrowRight size={20} />
                 </button>
               ) : (
-                <div className="flex flex-col items-end">
+                <div className="flex flex-col sm:items-end w-full sm:w-auto">
                   <button
                     onClick={handleSubmit}
                     disabled={!isBlockValid || isSubmitting}
-                    className={`inline-flex items-center gap-2 px-8 py-3 rounded-xl font-bold transition-all shadow-md ${
+                    className={`inline-flex items-center justify-center gap-2 px-8 py-3 rounded-xl font-bold transition-all shadow-md w-full sm:w-auto ${
                       !isBlockValid || isSubmitting
                         ? 'bg-slate-200 text-slate-400 opacity-50 cursor-not-allowed'
                         : 'bg-green-600 text-white hover:bg-green-700'
@@ -170,12 +173,12 @@ const PublicSurvey: React.FC = () => {
                   >
                     {isSubmitting ? (
                       <>
-                        Submitting...
+                        {t('Submitting...')}
                         <Loader2 size={20} className="animate-spin" />
                       </>
                     ) : (
                       <>
-                        Submit Survey
+                        {t('Submit Survey')}
                         <CheckCircle size={20} />
                       </>
                     )}

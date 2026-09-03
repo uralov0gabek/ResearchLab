@@ -63,3 +63,5 @@ coverage/
 e2e/
 playwright-report/
 test-results/
+
+loss_aversion_research.pdf

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Settings, MousePointer2, Loader2, List, Edit2, Trash2, Plus } from 'lucide-react';
 import { apiFetch } from '../../services/api/apiClient';
+import { useTranslation } from 'react-i18next';
+import { getLocalizedText } from '../../utils/localization';
 
 interface CPTTask {
   id: string;
@@ -14,6 +16,7 @@ interface CPTTask {
 }
 
 const CPTBuilder: React.FC = () => {
+  const { i18n } = useTranslation();
   const [isConfiguring, setIsConfiguring] = useState(false);
   const [tasks, setTasks] = useState<CPTTask[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -42,7 +45,7 @@ const CPTBuilder: React.FC = () => {
             const raw = opts?.raw || {};
             return {
               id: q.id,
-              title: q.question_text || q.title,
+              title: getLocalizedText(q.question_text || q.title, i18n.language),
               sure_amount: raw.sure_amount || 0,
               gamble_a_amount: raw.gamble_a_amount || 0,
               gamble_a_prob: raw.gamble_a_prob || 0,
@@ -272,7 +275,7 @@ const CPTBuilder: React.FC = () => {
                       gamble_b_prob: 50
                     });
                   }}
-                  className="px-5 py-2.5 text-slate-600 bg-white border border-slate-300 hover:bg-slate-50 font-medium rounded-lg transition-colors"
+                  className="px-5 py-2.5 text-slate-600 bg-white border border-slate-300 hover:bg-slate-50 font-medium rounded-lg transition-colors w-full sm:w-auto text-center"
                   disabled={isSaving}
                 >
                   Cancel
@@ -280,7 +283,7 @@ const CPTBuilder: React.FC = () => {
                 <button 
                   onClick={handleSave}
                   disabled={isSaving}
-                  className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors flex items-center gap-2"
+                  className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2 w-full sm:w-auto"
                 >
                   {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}
                   Save Configuration

@@ -3,8 +3,10 @@ import { Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { Mail, Phone, ArrowLeft } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 const Contact: React.FC = () => {
+  const { t } = useTranslation();
   return (
     <div className="min-h-screen bg-[#FFFDF5] text-gray-800 font-sans selection:bg-[#F4C542] selection:text-slate-900 flex flex-col pt-20">
       <Navbar />
@@ -16,12 +18,12 @@ const Contact: React.FC = () => {
             className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-slate-900 mb-8 transition-colors"
           >
             <ArrowLeft size={16} />
-            Back to Home
+            {t("Back to Home")}
           </Link>
 
           <div className="text-center mb-12">
             <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight mb-4">
-              Get in Touch
+              {t("Get in Touch")}
             </h1>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
               Have questions about our research or want to collaborate? Reach
