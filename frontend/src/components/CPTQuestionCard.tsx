@@ -1,5 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
+import { getLocalizedText } from '../utils/localization';
 
 export interface LotteryRow {
   sureAmount: number;
@@ -14,6 +16,7 @@ interface CPTQuestionCardProps {
 }
 
 const CPTQuestionCard: React.FC<CPTQuestionCardProps> = ({ rows, selectedValues, onSelect }) => {
+  const { i18n } = useTranslation();
   return (
     <div className="w-full mt-6 space-y-4">
       {/* Desktop Headers */}
@@ -58,7 +61,7 @@ const CPTQuestionCard: React.FC<CPTQuestionCardProps> = ({ rows, selectedValues,
                     : 'bg-white border-slate-200 text-slate-700 hover:border-amber-300 hover:bg-amber-50/50'
                 }`}
               >
-                Take the gamble: {row.gamble}
+                Take the gamble: {getLocalizedText(row.gamble, i18n.language || 'en')}
               </motion.button>
             </div>
           </div>

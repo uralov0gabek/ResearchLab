@@ -32,7 +32,7 @@ const Home: React.FC = () => {
             <div className="flex flex-col sm:flex-row gap-4">
               <Link 
                 to="/survey" 
-                onClick={() => sessionStorage.removeItem('survey_session_data')}
+                onClick={() => sessionStorage.clear()}
                 className="inline-flex justify-center items-center gap-2 px-8 py-4 rounded-xl bg-[#F4C542] text-slate-900 font-semibold text-lg hover:bg-[#e3b632] hover:-translate-y-0.5 transition-all shadow-[0_8px_20px_-6px_rgba(244,197,66,0.5)]">
                 Take the Survey
                 <ArrowRight size={20} />
