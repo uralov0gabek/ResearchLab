@@ -3,7 +3,22 @@ import { useNavigate } from 'react-router-dom';
 import type { Question, AnswerValue, SessionData } from '../types';
 import { apiFetch } from '../services/api/apiClient';
 
+/**
+ * Converts any value (string or {en,ru,uz} object) into a stable string.
+ * If it's an object with localized keys, we store the raw JSON so comparisons work.
+ * Rendering code uses getLocalizedText to display the correct language.
+ */
+const toStableString = (val: any): string => {
+  if (!val) return '';
+  if (typeof val === 'string') return val;
+  if (typeof val === 'object') return JSON.stringify(val);
+  return String(val);
+};
+
 const STORAGE_KEY = 'survey_session_data';
+// Versioned cache key — bump version to invalidate old cached question formats
+const QUESTIONS_CACHE_KEY = 'survey_questions_cache_v2';
+
 
 export const useSurvey = () => {
   const navigate = useNavigate();
@@ -22,7 +37,7 @@ export const useSurvey = () => {
       try {
         setIsLoading(true);
 
-        const cachedQuestions = sessionStorage.getItem('survey_questions_cache');
+        const cachedQuestions = sessionStorage.getItem(QUESTIONS_CACHE_KEY);
         if (cachedQuestions) {
           const parsedCache = JSON.parse(cachedQuestions);
           setQuestions(parsedCache);
@@ -37,14 +52,16 @@ export const useSurvey = () => {
           allQuestions = data.map((q: any) => ({
             id: String(q.id),
             type: q.type,
-            text: q.question_text || '',
-            block_name: q.block_name || '',
+            // Always store as stable string — prevents React Error #31 (object rendered as child)
+            text: toStableString(q.question_text),
+            block_name: toStableString(q.block_name),
             options: q.options,
+            required: Boolean(q.required),
             dependsOn: q.conditional_logic
           }));
         }
 
-        sessionStorage.setItem('survey_questions_cache', JSON.stringify(allQuestions));
+        sessionStorage.setItem(QUESTIONS_CACHE_KEY, JSON.stringify(allQuestions));
         setQuestions(allQuestions);
       } catch (err) {
         console.error('Error fetching questions:', err);
