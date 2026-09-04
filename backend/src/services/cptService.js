@@ -111,8 +111,8 @@ const calculateCPTParameters = (answers, cptTasks) => {
   };
 
   cptTasks.forEach(task => {
-    // Map properties from new question schema
-    const title = task.question_text || '';
+    // Map properties from new question schema or older cpt_tasks schema
+    const title = task.question_text || task.title || '';
     // Extract 2-char block prefix: e.g. "G1a. ..." -> "G1", "M3b. ..." -> "M3"
     const match = title.match(/^([A-Z]\d)/);
     const blockPrefix = match ? match[1] : '';

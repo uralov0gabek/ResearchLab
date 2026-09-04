@@ -22,6 +22,8 @@ const AdminOverview: React.FC = () => {
   const [totalResponses, setTotalResponses] = useState(0);
   const [activeQuestions, setActiveQuestions] = useState(0);
   const [completionRate, setCompletionRate] = useState(100);
+  
+  const [error, setError] = useState<string | null>(null);
 
   const fetchData = async () => {
     try {
@@ -33,9 +35,11 @@ const AdminOverview: React.FC = () => {
       setCompletionRate(data.completionRate || 0);
       setGenData(data.genData || []);
       setRoleData(data.roleData || []);
+      setError(null);
       
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error fetching admin data', err);
+      setError(err.message || 'Unable to connect to the server. Please try again.');
       // Fallback empty states
       setTotalResponses(0);
       setActiveQuestions(0);
@@ -58,6 +62,25 @@ const AdminOverview: React.FC = () => {
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-8 flex flex-col items-center justify-center min-h-[400px]">
         <Loader2 className="w-10 h-10 animate-spin text-[#F4C542] mb-4" />
         <p className="text-slate-500 font-medium">Loading Analytics...</p>
+        <p className="text-sm text-slate-400 mt-2">Waking up the server if it was asleep. This might take a few seconds.</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-white rounded-2xl shadow-sm border border-red-200 p-6 sm:p-8 flex flex-col items-center justify-center min-h-[400px]">
+        <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-4">
+          <span className="text-2xl">⚠️</span>
+        </div>
+        <h3 className="text-xl font-semibold text-slate-800 text-center mb-2">Connection Error</h3>
+        <p className="text-slate-600 text-center mb-6 max-w-md">{error}</p>
+        <button 
+          onClick={fetchData}
+          className="px-6 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 transition-colors font-medium"
+        >
+          Try Again
+        </button>
       </div>
     );
   }

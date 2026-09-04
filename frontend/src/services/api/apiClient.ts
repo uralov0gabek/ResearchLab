@@ -45,15 +45,45 @@ export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
   }
 
   const url = `${API_BASE_URL.replace(/\/$/, '')}/${endpoint.replace(/^\//, '')}`;
-  const response = await fetch(url, {
-    ...options,
-    headers,
-  });
+  
+  const MAX_RETRIES = 3;
+  let attempt = 0;
+  
+  while (attempt < MAX_RETRIES) {
+    try {
+      const response = await fetch(url, {
+        ...options,
+        headers,
+      });
 
-  if (!response.ok) {
-    const errorBody = await response.json().catch(() => null);
-    throw new Error(errorBody?.error || `API request failed with status ${response.status}`);
+      if (!response.ok) {
+        // If it's a 502 or 503 (Render cold start or gateway error), we might want to retry
+        if ((response.status === 502 || response.status === 503) && attempt < MAX_RETRIES - 1) {
+          throw new Error(`Server waking up or unavailable (${response.status})`);
+        }
+        
+        const errorBody = await response.json().catch(() => null);
+        throw new Error(errorBody?.error || `API request failed with status ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (err: any) {
+      attempt++;
+      
+      // If it's not a network error or a 502/503 (caught above), and not a fetch failure, we should probably not retry
+      // but 'Failed to fetch' is a TypeError thrown by fetch() when the network is completely down/closed.
+      const isNetworkError = err instanceof TypeError && err.message.includes('Failed to fetch');
+      const isServerWaking = err.message && err.message.includes('Server waking up');
+      
+      if ((isNetworkError || isServerWaking) && attempt < MAX_RETRIES) {
+        console.warn(`[apiClient] Request failed (${err.message}), retrying attempt ${attempt}...`);
+        // Exponential backoff: 1s, 2s, 4s
+        await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt - 1) * 1000));
+        continue;
+      }
+      
+      // If we've exhausted retries or it's a different error (e.g. 400 Bad Request), throw it
+      throw err;
+    }
   }
-
-  return response.json();
 };

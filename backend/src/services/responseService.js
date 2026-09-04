@@ -14,9 +14,9 @@ const saveResponse = async (userId, answers) => {
   }
 
   // Fetch CPT tasks for calculation
-  const { data: cptTasks, error: cptError } = await supabaseAdmin.from('questions').select('*').eq('type', 'lottery');
+  const { data: cptTasks, error: cptError } = await supabaseAdmin.from('cpt_tasks').select('*');
   if (cptError) {
-    console.error('Failed to fetch cpt tasks (lottery questions) for calculation', cptError);
+    console.error('Failed to fetch cpt tasks for calculation', cptError);
     // Non-fatal, we just can't calculate CPT parameters
   }
   

@@ -16,7 +16,7 @@ const allowedOrigins = [frontendUrl, 'http://localhost:5173'];
 
 app.use(cors({
   origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin) || /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
+    if (!origin || allowedOrigins.includes(origin) || /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin) || /\.vercel\.app$/.test(origin)) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
@@ -53,8 +53,24 @@ app.get('/', (req, res) => {
   res.send('Research Lab Backend API is running');
 });
 
+// Health check endpoint for frontend to ping
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ status: 'ok', message: 'Backend is awake and healthy' });
+});
+
 // Centralized Error Handling Middleware
 app.use(errorHandler);
+
+// Global unhandled promise rejection and uncaught exception handlers
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  // Do not exit the process, just log it so the server stays up
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception thrown:', err);
+  // Do not exit the process, just log it so the server stays up
+});
 
 // Start Server
 if (require.main === module) {

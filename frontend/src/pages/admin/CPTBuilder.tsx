@@ -22,6 +22,7 @@ const CPTBuilder: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   
   const [formData, setFormData] = useState({
@@ -36,28 +37,14 @@ const CPTBuilder: React.FC = () => {
   const fetchTasks = async () => {
     setIsLoading(true);
     try {
-      const data = await apiFetch('/questions');
+      const data = await apiFetch('/cpt-tasks');
       if (data) {
-        const cptTasks = data
-          .filter((q: any) => q.type === 'lottery')
-          .map((q: any) => {
-            const opts = Array.isArray(q.options) ? q.options[0] : null;
-            const raw = opts?.raw || {};
-            return {
-              id: q.id,
-              title: getLocalizedText(q.question_text || q.title, i18n.language),
-              sure_amount: raw.sure_amount || 0,
-              gamble_a_amount: raw.gamble_a_amount || 0,
-              gamble_a_prob: raw.gamble_a_prob || 0,
-              gamble_b_amount: raw.gamble_b_amount || 0,
-              gamble_b_prob: raw.gamble_b_prob || 0,
-              created_at: q.created_at
-            };
-          });
-        setTasks(cptTasks);
+        setTasks(data);
       }
-    } catch (error) {
-      console.error('Error fetching CPT tasks:', error);
+      setError(null);
+    } catch (err: any) {
+      console.error('Error fetching CPT tasks:', err);
+      setError(err.message || 'Unable to connect to the server.');
     } finally {
       setIsLoading(false);
     }
@@ -83,22 +70,15 @@ const CPTBuilder: React.FC = () => {
     }
     setIsSaving(true);
     try {
-      await apiFetch('/questions', {
+      await apiFetch('/cpt-tasks', {
         method: 'POST',
         body: JSON.stringify({
-          questionsToUpsert: [{
-            id: editingTaskId || crypto.randomUUID(),
-            block_name: 'CPT Tasks',
-            question_text: formData.title,
-            type: 'lottery',
-            options: [{
-              sureAmount: formData.sure_amount,
-              gamble: `${formData.gamble_a_prob}% chance to win $${formData.gamble_a_amount} or ${formData.gamble_b_prob}% chance to win $${formData.gamble_b_amount}`,
-              raw: { ...formData }
-            }],
-            required: true
-          }],
-          idsToDelete: []
+          title: formData.title,
+          sure_amount: formData.sure_amount,
+          gamble_a_amount: formData.gamble_a_amount,
+          gamble_a_prob: formData.gamble_a_prob,
+          gamble_b_amount: formData.gamble_b_amount,
+          gamble_b_prob: formData.gamble_b_prob
         })
       });
       setIsConfiguring(false);
@@ -311,8 +291,21 @@ const CPTBuilder: React.FC = () => {
           </div>
           
           {isLoading ? (
-            <div className="flex justify-center p-8">
-              <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+            <div className="flex flex-col items-center justify-center p-12">
+              <Loader2 className="w-8 h-8 text-blue-500 animate-spin mb-4" />
+              <p className="text-slate-500">Loading tasks or waking up server...</p>
+            </div>
+          ) : error ? (
+            <div className="text-center p-8 bg-white rounded-xl border border-red-200">
+              <span className="text-4xl mb-4 block">⚠️</span>
+              <h3 className="text-lg font-semibold text-slate-800 mb-2">Connection Error</h3>
+              <p className="text-slate-600 mb-6">{error}</p>
+              <button 
+                onClick={fetchTasks}
+                className="px-6 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 transition-colors font-medium"
+              >
+                Try Again
+              </button>
             </div>
           ) : tasks.length === 0 ? (
             <div className="text-center p-8 text-slate-500 bg-white rounded-xl border border-slate-200">

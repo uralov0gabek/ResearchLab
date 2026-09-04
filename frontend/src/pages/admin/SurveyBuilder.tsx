@@ -89,6 +89,7 @@ const SurveyBuilder: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   
   const [showAddBlockModal, setShowAddBlockModal] = useState(false);
   const [newBlockName, setNewBlockName] = useState('');
@@ -116,9 +117,10 @@ const SurveyBuilder: React.FC = () => {
           setActiveBlock(blocks[0] as string);
         }
       }
-    } catch (err) {
+      setError(null);
+    } catch (err: any) {
       console.error('Error fetching questions:', err);
-      alert('Failed to load questions.');
+      setError(err.message || 'Unable to connect to the server. Please try again later.');
     } finally {
       setIsLoading(false);
     }
@@ -308,7 +310,19 @@ const SurveyBuilder: React.FC = () => {
         
         {/* Questions */}
         <div className="space-y-6 max-w-4xl mx-auto pb-12">
-          {!activeBlock ? (
+          {error ? (
+            <div className="text-center py-20 bg-white rounded-2xl border border-red-200 shadow-sm flex flex-col items-center">
+              <span className="text-4xl mb-4">⚠️</span>
+              <h3 className="text-xl font-semibold text-slate-700 mb-2">Connection Error</h3>
+              <p className="text-slate-500 mb-6">{error}</p>
+              <button 
+                onClick={fetchQuestions}
+                className="px-6 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 font-medium transition-colors"
+              >
+                Try Again
+              </button>
+            </div>
+          ) : !activeBlock ? (
             <div className="text-center py-20 bg-white rounded-2xl border border-gray-200 shadow-sm">
               <h3 className="text-xl font-semibold text-slate-700 mb-2">No block selected</h3>
               <p className="text-gray-500 mb-6">Please select a block from the sidebar or create a new one.</p>
