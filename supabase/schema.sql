@@ -1,73 +1,71 @@
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
+-- Survey Modules Table (Optional grouping, but requested by user)
+CREATE TABLE public.survey_modules (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name TEXT NOT NULL,
+    description TEXT,
+    order_index INTEGER DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
 -- Questions Table
 CREATE TABLE public.questions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    text TEXT NOT NULL,
-    type TEXT NOT NULL, -- e.g., 'multiple_choice', 'text', 'scale'
-    options JSONB, -- For multiple choice options
+    module_id UUID REFERENCES public.survey_modules(id) ON DELETE SET NULL,
+    block_name TEXT, -- E.g. "Section A. Basic demographics"
+    question_text TEXT NOT NULL,
+    type TEXT NOT NULL, -- e.g., 'multiple_choice', 'single_choice', 'short_text', 'number_input', 'slider', 'matrix'
+    options JSONB, -- For multiple choice options or slider config
+    conditional_logic JSONB, -- Defines if this question depends on others
     order_index INTEGER DEFAULT 0,
     required BOOLEAN DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- CPT Tasks Table (Cumulative Prospect Theory)
+CREATE TABLE public.cpt_tasks (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    title TEXT NOT NULL, -- E.g. "G1a. Take 200,000 UZS for sure or gamble"
+    block TEXT NOT NULL, -- 'gain', 'loss', 'mixed'
+    sure_amount NUMERIC NOT NULL,
+    gamble_a_amount NUMERIC NOT NULL,
+    gamble_a_prob NUMERIC NOT NULL, -- percentage 0-100
+    gamble_b_amount NUMERIC NOT NULL,
+    gamble_b_prob NUMERIC NOT NULL, -- percentage 0-100
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
 -- Responses Table (represents a single user taking the survey)
 CREATE TABLE public.responses (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    session_id TEXT, -- To track anonymous users or authenticated user ID
+    user_id UUID, -- For authenticated users, if any
+    session_id TEXT, -- To track anonymous users
+    answers JSONB, -- Key-value map of question_id -> user answer
+    calculated_cpt_parameters JSONB, -- Stores the calculated alpha, beta, lambda, gamma, delta
     started_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
     completed_at TIMESTAMP WITH TIME ZONE
 );
 
--- Answers Table
-CREATE TABLE public.answers (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    response_id UUID NOT NULL REFERENCES public.responses(id) ON DELETE CASCADE,
-    question_id UUID NOT NULL REFERENCES public.questions(id) ON DELETE CASCADE,
-    value JSONB NOT NULL, -- Can store text, numbers, or arrays (multiple choice)
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
-);
-
 -- Set up Row Level Security (RLS)
 
--- 1. Questions
+-- 1. Survey Modules
+ALTER TABLE public.survey_modules ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Anyone can view modules" ON public.survey_modules FOR SELECT USING (true);
+CREATE POLICY "Admin can manage modules" ON public.survey_modules FOR ALL USING (auth.role() = 'authenticated');
+
+-- 2. Questions
 ALTER TABLE public.questions ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Anyone can view questions" ON public.questions FOR SELECT USING (true);
+CREATE POLICY "Admin can manage questions" ON public.questions FOR ALL USING (auth.role() = 'authenticated');
 
--- Allow anyone to read questions
-CREATE POLICY "Anyone can view questions" ON public.questions
-    FOR SELECT USING (true);
+-- 3. CPT Tasks
+ALTER TABLE public.cpt_tasks ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Anyone can view cpt_tasks" ON public.cpt_tasks FOR SELECT USING (true);
+CREATE POLICY "Admin can manage cpt_tasks" ON public.cpt_tasks FOR ALL USING (auth.role() = 'authenticated');
 
--- Allow authenticated users to manage questions
-CREATE POLICY "Authenticated users can insert questions" ON public.questions
-    FOR INSERT WITH CHECK (auth.role() = 'authenticated');
-
-CREATE POLICY "Authenticated users can update questions" ON public.questions
-    FOR UPDATE USING (auth.role() = 'authenticated');
-
-CREATE POLICY "Authenticated users can delete questions" ON public.questions
-    FOR DELETE USING (auth.role() = 'authenticated');
-
-
--- 2. Responses
+-- 4. Responses
 ALTER TABLE public.responses ENABLE ROW LEVEL SECURITY;
-
--- Allow anyone to insert a response
-CREATE POLICY "Anyone can insert responses" ON public.responses
-    FOR INSERT WITH CHECK (true);
-
--- Allow authenticated users to view all responses
-CREATE POLICY "Authenticated users can view responses" ON public.responses
-    FOR SELECT USING (auth.role() = 'authenticated');
-
-
--- 3. Answers
-ALTER TABLE public.answers ENABLE ROW LEVEL SECURITY;
-
--- Allow anyone to insert an answer
-CREATE POLICY "Anyone can insert answers" ON public.answers
-    FOR INSERT WITH CHECK (true);
-
--- Allow authenticated users to view all answers
-CREATE POLICY "Authenticated users can view answers" ON public.answers
-    FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY "Anyone can insert responses" ON public.responses FOR INSERT WITH CHECK (true);
+CREATE POLICY "Authenticated users can view responses" ON public.responses FOR SELECT USING (auth.role() = 'authenticated');
