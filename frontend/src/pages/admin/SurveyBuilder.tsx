@@ -24,7 +24,7 @@ interface Question {
   block_name: string;
   type: QuestionType;
   title: string;
-  options: unknown; // Can be string[] or for lottery: { gambleAAmount, gambleAProb, gambleBAmount, gambleBProb } etc.
+  options: any; // Can be string[] or for lottery: { gambleAAmount, gambleAProb, gambleBAmount, gambleBProb } etc.
   required: boolean;
   dependsOn?: LogicGroup | LogicRule;
 }
@@ -466,7 +466,7 @@ const SurveyBuilder: React.FC = () => {
                     if (q.dependsOn) {
                       if ('operator' in q.dependsOn) {
                         logicGroup = q.dependsOn as LogicGroup;
-                      } else if ('questionId' in (q.dependsOn as Record<string, unknown>)) {
+                      } else if ('questionId' in (q.dependsOn as unknown as Record<string, unknown>)) {
                         logicGroup = { operator: 'AND', rules: [q.dependsOn as LogicRule] };
                       }
                     }

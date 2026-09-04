@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Settings, MousePointer2, Loader2, List, Edit2, Trash2, Plus } from 'lucide-react';
 import { apiFetch } from '../../services/api/apiClient';
-import { useTranslation } from 'react-i18next';
-import { getLocalizedText } from '../../utils/localization';
 
 interface CPTTask {
   id: string;
@@ -16,7 +14,6 @@ interface CPTTask {
 }
 
 const CPTBuilder: React.FC = () => {
-  const { i18n } = useTranslation();
   const [isConfiguring, setIsConfiguring] = useState(false);
   const [tasks, setTasks] = useState<CPTTask[]>([]);
   const [isLoading, setIsLoading] = useState(true);
