@@ -2,12 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Compass, Menu, X, Globe } from 'lucide-react';
+import { Compass, Menu, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 const Navbar: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isLangOpen, setIsLangOpen] = useState(false);
   const { i18n, t } = useTranslation();
 
   const toggleMobileMenu = () => {
@@ -33,12 +32,6 @@ const Navbar: React.FC = () => {
     { name: t('Login'), href: '/admin', isExternal: false },
   ];
 
-  const changeLanguage = (lng: string) => {
-    i18n.changeLanguage(lng);
-    localStorage.setItem('i18nextLng', lng);
-    setIsLangOpen(false);
-    setIsMobileMenuOpen(false);
-  };
 
   const closeMenu = () => {
     setIsMobileMenuOpen(false);

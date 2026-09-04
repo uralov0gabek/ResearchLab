@@ -9,15 +9,13 @@ import {
   LineChart,
   Settings as SettingsIcon,
   LogOut,
-  Menu,
-  Globe
+  Menu
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 const AdminLayout: React.FC = () => {
   const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isLangOpen, setIsLangOpen] = useState(false);
   const { t, i18n } = useTranslation();
 
   const handleSignOut = async () => {
@@ -34,11 +32,6 @@ const AdminLayout: React.FC = () => {
     { name: t('Settings') || 'Settings', path: '/admin/settings', icon: SettingsIcon },
   ];
 
-  const changeLanguage = (lng: string) => {
-    i18n.changeLanguage(lng);
-    localStorage.setItem('i18nextLng', lng);
-    setIsLangOpen(false);
-  };
 
   return (
     <div className="min-h-screen bg-[#FFFDF5] font-sans">

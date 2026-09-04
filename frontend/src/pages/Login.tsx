@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { Lock, Loader2, ArrowLeft, Globe } from 'lucide-react';
+import { Lock, Loader2, ArrowLeft } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 const Login: React.FC = () => {
@@ -11,14 +11,8 @@ const Login: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   const navigate = useNavigate();
-  const { t, i18n } = useTranslation();
-  const [isLangOpen, setIsLangOpen] = useState(false);
+  const { t } = useTranslation();
 
-  const changeLanguage = (lng: string) => {
-    i18n.changeLanguage(lng);
-    localStorage.setItem('i18nextLng', lng);
-    setIsLangOpen(false);
-  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
