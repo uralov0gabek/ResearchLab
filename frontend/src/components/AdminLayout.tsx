@@ -16,7 +16,7 @@ import { useTranslation } from 'react-i18next';
 const AdminLayout: React.FC = () => {
   const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();

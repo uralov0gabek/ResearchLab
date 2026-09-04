@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 
 const Navbar: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { i18n, t } = useTranslation();
+  const { t } = useTranslation();
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
