@@ -70,6 +70,7 @@ const fetchResponses = async () => {
       alpha: cpt.alpha?.toFixed(3) || 'N/A',
       beta: cpt.beta?.toFixed(3) || 'N/A',
       lambda: cpt.lambda?.toFixed(3) || 'N/A',
+      answers: r.answers || {}
     };
   });
 

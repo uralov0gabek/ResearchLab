@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { apiFetch } from '../../services/api/apiClient';
-import { Loader2, Search, Download } from 'lucide-react';
+import { Loader2, Search, Download, ChevronDown, ChevronUp } from 'lucide-react';
+import { getLocalizedText } from '../../utils/localization';
 
 interface ProcessedResponse {
   id: string;
@@ -9,18 +10,25 @@ interface ProcessedResponse {
   alpha: string;
   beta: string;
   lambda: string;
+  answers?: Record<string, any>;
 }
 
 const Responses: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [responsesData, setResponsesData] = useState<ProcessedResponse[]>([]);
+  const [questions, setQuestions] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
   const fetchData = async () => {
     try {
       setLoading(true);
-      const data = await apiFetch('/responses');
+      const [data, qData] = await Promise.all([
+        apiFetch('/responses'),
+        apiFetch('/questions').catch(() => [])
+      ]);
       setResponsesData(data.responses || []);
+      setQuestions(qData || []);
     } catch (err) {
       console.error('Error fetching responses data:', err);
       setResponsesData([]);
@@ -51,6 +59,13 @@ const Responses: React.FC = () => {
   const filteredResponses = responsesData.filter((row) => 
     row.id.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const toggleRow = (id: string) => {
+    const newSet = new Set(expandedRows);
+    if (newSet.has(id)) newSet.delete(id);
+    else newSet.add(id);
+    setExpandedRows(newSet);
+  };
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden animate-in fade-in duration-500">
@@ -111,18 +126,56 @@ const Responses: React.FC = () => {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {filteredResponses.map((row) => (
-                <tr key={row.id} className="hover:bg-slate-50 transition-colors group">
-                  <td className="px-6 py-4 text-sm font-mono text-slate-500 max-w-[120px] truncate" title={row.id}>
-                    {row.id}
-                  </td>
-                  <td className="px-6 py-4 text-sm font-mono text-slate-500">
-                    {row.user_id || 'Anonymous'}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-slate-700 font-medium">{row.date}</td>
-                  <td className="px-6 py-4 text-sm text-slate-700">{row.alpha}</td>
-                  <td className="px-6 py-4 text-sm text-slate-700">{row.beta}</td>
-                  <td className="px-6 py-4 text-sm text-slate-700">{row.lambda}</td>
-                </tr>
+                <React.Fragment key={row.id}>
+                  <tr 
+                    className="hover:bg-slate-50 transition-colors group cursor-pointer"
+                    onClick={() => toggleRow(row.id)}
+                  >
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
+                        {expandedRows.has(row.id) ? <ChevronUp size={16} className="text-slate-400" /> : <ChevronDown size={16} className="text-slate-400" />}
+                        <span className="text-sm font-mono text-slate-500 max-w-[120px] truncate" title={row.id}>{row.id}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-sm font-mono text-slate-500">
+                      {row.user_id || 'Anonymous'}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-slate-700 font-medium">{row.date}</td>
+                    <td className="px-6 py-4 text-sm text-slate-700">{row.alpha}</td>
+                    <td className="px-6 py-4 text-sm text-slate-700">{row.beta}</td>
+                    <td className="px-6 py-4 text-sm text-slate-700">{row.lambda}</td>
+                  </tr>
+                  {expandedRows.has(row.id) && (
+                    <tr className="bg-slate-50/50">
+                      <td colSpan={6} className="px-6 py-6 border-b border-slate-100">
+                        <div className="max-w-4xl mx-auto bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                          <h4 className="font-semibold text-slate-800 mb-4 flex items-center gap-2">
+                            Detailed Answers for Response
+                          </h4>
+                          <div className="space-y-4">
+                            {Object.entries(row.answers || {}).length === 0 ? (
+                              <p className="text-sm text-slate-500">No detailed answers available.</p>
+                            ) : (
+                              Object.entries(row.answers || {}).map(([qId, ans]) => {
+                                if (qId === 'session_id') return null;
+                                const q = questions.find(q => q.id === qId);
+                                const questionTitle = q ? getLocalizedText(q.question_text || q.title || q.block_name, 'en') : qId;
+                                return (
+                                  <div key={qId} className="text-sm border-b border-slate-100 pb-3 last:border-0 last:pb-0">
+                                    <div className="text-slate-500 mb-1 font-medium">{questionTitle}</div>
+                                    <div className="text-slate-900 bg-slate-50 px-3 py-2 rounded-lg inline-block">
+                                      {typeof ans === 'object' ? JSON.stringify(ans) : String(ans)}
+                                    </div>
+                                  </div>
+                                );
+                              })
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
               ))}
             </tbody>
           </table>

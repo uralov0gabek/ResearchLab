@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Plus, Trash2, ArrowUp, ArrowDown, Save, CheckSquare, Loader2, LayoutGrid, CheckCircle,
-  CircleDot, CheckSquare as CheckSquareIcon, Type, Hash, Dices, ChevronDown
+  CircleDot, CheckSquare as CheckSquareIcon, Type, Hash, Dices, ChevronDown, Edit2
 } from 'lucide-react';
 import { apiFetch } from '../../services/api/apiClient';
 import { useTranslation } from 'react-i18next';
@@ -93,6 +93,9 @@ const SurveyBuilder: React.FC = () => {
   
   const [showAddBlockModal, setShowAddBlockModal] = useState(false);
   const [newBlockName, setNewBlockName] = useState('');
+  
+  const [editingBlock, setEditingBlock] = useState<string | null>(null);
+  const [editBlockName, setEditBlockName] = useState('');
 
   const fetchQuestions = React.useCallback(async () => {
     try {
@@ -135,6 +138,24 @@ const SurveyBuilder: React.FC = () => {
   const handleAddBlock = () => {
     setNewBlockName('');
     setShowAddBlockModal(true);
+  };
+
+  const handleRenameBlock = (oldName: string, newName: string) => {
+    if (!newName.trim() || oldName === newName) {
+      setEditingBlock(null);
+      return;
+    }
+    setQuestions(questions.map(q => q.block_name === oldName ? { ...q, block_name: newName } : q));
+    if (activeBlock === oldName) setActiveBlock(newName);
+    setEditingBlock(null);
+  };
+
+  const handleDeleteBlock = (blockName: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (window.confirm(`Are you sure you want to delete the block "${blockName}" and ALL its questions?`)) {
+      setQuestions(questions.filter(q => q.block_name !== blockName));
+      if (activeBlock === blockName) setActiveBlock(null);
+    }
   };
 
   const addQuestion = () => {
@@ -257,13 +278,52 @@ const SurveyBuilder: React.FC = () => {
               <div 
                 key={block}
                 onClick={() => setActiveBlock(block)}
-                className={`p-4 rounded-xl cursor-pointer transition-all flex justify-between items-start group ${activeBlock === block ? 'bg-white border border-gray-200 shadow-sm border-l-4 border-l-[#F4C542]' : 'hover:bg-white border border-transparent hover:border-gray-200'}`}
+                className={`p-4 rounded-xl cursor-pointer transition-all flex flex-col group relative ${activeBlock === block ? 'bg-white border border-gray-200 shadow-sm border-l-4 border-l-[#F4C542]' : 'hover:bg-white border border-transparent hover:border-gray-200'}`}
               >
-                <div>
-                  <h3 className={`font-semibold ${activeBlock === block ? 'text-slate-800' : 'text-slate-700'}`}>{block}</h3>
-                  <p className="text-xs text-gray-500 mt-1.5 flex items-center gap-2">
-                    {questions.filter(q => q.block_name === block).length} Questions
-                  </p>
+                <div className="flex justify-between items-start">
+                  <div className="flex-1 pr-6">
+                    {editingBlock === block ? (
+                      <input
+                        type="text"
+                        value={editBlockName}
+                        onChange={(e) => setEditBlockName(e.target.value)}
+                        onClick={(e) => e.stopPropagation()}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleRenameBlock(block, editBlockName);
+                          else if (e.key === 'Escape') setEditingBlock(null);
+                        }}
+                        onBlur={() => handleRenameBlock(block, editBlockName)}
+                        className="w-full text-sm font-semibold border-b border-gray-300 focus:border-[#F4C542] outline-none bg-transparent"
+                        autoFocus
+                      />
+                    ) : (
+                      <h3 className={`font-semibold ${activeBlock === block ? 'text-slate-800' : 'text-slate-700'}`}>{block}</h3>
+                    )}
+                    <p className="text-xs text-gray-500 mt-1.5 flex items-center gap-2">
+                      {questions.filter(q => q.block_name === block).length} Questions
+                    </p>
+                  </div>
+                  
+                  <div className="absolute right-3 top-4 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditBlockName(block);
+                        setEditingBlock(block);
+                      }}
+                      className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-md transition-colors"
+                      title="Edit Block Name"
+                    >
+                      <Edit2 size={14} />
+                    </button>
+                    <button 
+                      onClick={(e) => handleDeleteBlock(block, e)}
+                      className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
+                      title="Delete Block"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
                 </div>
               </div>
             ))
@@ -459,10 +519,16 @@ const SurveyBuilder: React.FC = () => {
                               className="w-full sm:flex-1 appearance-none rounded border border-gray-200 text-sm focus:border-[#F4C542] focus:ring-[#F4C542] bg-slate-50 py-2 sm:py-1.5 px-3 sm:px-2 outline-none sm:min-w-[150px]"
                             >
                               <option value="">Select question...</option>
-                              {questions.filter(otherQ => otherQ.id !== q.id).map(otherQ => (
-                                <option key={otherQ.id} value={otherQ.id}>
-                                  {otherQ.title.substring(0, 40)}{otherQ.title.length > 40 ? '...' : ''}
-                                </option>
+                              {uniqueBlocks.map(block => (
+                                <optgroup key={block} label={block}>
+                                  {questions
+                                    .filter(otherQ => otherQ.block_name === block && otherQ.id !== q.id)
+                                    .map(otherQ => (
+                                      <option key={otherQ.id} value={otherQ.id}>
+                                        {otherQ.title.substring(0, 40)}{otherQ.title.length > 40 ? '...' : ''}
+                                      </option>
+                                    ))}
+                                </optgroup>
                               ))}
                             </select>
                             <span className="text-sm text-slate-500 shrink-0 sm:mx-1 self-start sm:self-auto">equals</span>
