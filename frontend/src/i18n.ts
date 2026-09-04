@@ -104,13 +104,7 @@ const resources = {
       "Total Responses": "Общие ответы",
       "Admin Profile": "Профиль администратора",
       "Security Settings": "Настройки безопасности",
-      "Save Changes": "Сохранить изменения",
-      "Next": "Далее",
-      "Back": "Назад",
-      "Submit Survey": "Отправить",
-      "Option A": "Вариант A",
-      "Option B": "Вариант B",
-      "Thank you for completing the survey!": "Спасибо за участие!"
+      "Save Changes": "Сохранить изменения"
     }
   }
 };

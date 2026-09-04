@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { Lock, Mail, Loader2, ArrowLeft, Globe } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import { Lock, Loader2, ArrowLeft, Globe } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 const Login: React.FC = () => {
@@ -10,8 +9,7 @@ const Login: React.FC = () => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
-  const { login } = useAuth();
+
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const [isLangOpen, setIsLangOpen] = useState(false);

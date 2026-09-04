@@ -10,7 +10,8 @@ export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
 
   const PUBLIC_ENDPOINTS = [
     { method: 'GET', endpoint: '/questions' },
-    { method: 'POST', endpoint: '/responses' }
+    { method: 'POST', endpoint: '/responses' },
+    { method: 'GET', endpoint: '/cpt-tasks' }
   ];
 
   const isPublic = PUBLIC_ENDPOINTS.some(

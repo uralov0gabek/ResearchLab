@@ -120,9 +120,9 @@ const Results: React.FC = () => {
             <div className="w-20 h-20 bg-amber-50 rounded-full flex items-center justify-center mb-6">
               <LineChart className="w-10 h-10 text-amber-500" />
             </div>
-            <h2 className="text-xl font-semibold text-slate-900 mb-3">Hali natijalar yo'q</h2>
-            <p className="text-slate-500 max-w-md">
-              Foydalanuvchilar so'rovnomani to'ldirishganda, CPT (Cumulative Prospect Theory) tahlillari va kogo'rta solishtirmalari shu yerda paydo bo'ladi.
+            <h2 className="text-xl font-semibold text-slate-900 mb-3">No results yet</h2>
+            <p className="text-slate-500 max-w-md mx-auto">
+              Once users complete the survey, CPT (Cumulative Prospect Theory) analytics and cohort comparisons will appear here.
             </p>
           </div>
         </div>
