@@ -76,3 +76,13 @@ CREATE POLICY "Admin can manage cpt_tasks" ON public.cpt_tasks FOR ALL USING (au
 ALTER TABLE public.responses ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Anyone can insert responses" ON public.responses FOR INSERT WITH CHECK (true);
 CREATE POLICY "Authenticated users can view responses" ON public.responses FOR SELECT USING (auth.role() = 'authenticated');
+
+-- Grant permissions to standard Supabase roles
+GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
+GRANT ALL ON TABLE public.survey_modules TO anon, authenticated, service_role;
+GRANT ALL ON TABLE public.questions TO anon, authenticated, service_role;
+GRANT ALL ON TABLE public.cpt_tasks TO anon, authenticated, service_role;
+GRANT ALL ON TABLE public.responses TO anon, authenticated, service_role;
+
+-- Notify PostgREST to reload schema
+NOTIFY pgrst, 'reload schema';
