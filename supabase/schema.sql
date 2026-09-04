@@ -1,6 +1,13 @@
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
+-- Drop existing tables to ensure a clean slate
+DROP TABLE IF EXISTS public.answers CASCADE;
+DROP TABLE IF EXISTS public.responses CASCADE;
+DROP TABLE IF EXISTS public.questions CASCADE;
+DROP TABLE IF EXISTS public.cpt_tasks CASCADE;
+DROP TABLE IF EXISTS public.survey_modules CASCADE;
+
 -- Survey Modules Table (Optional grouping, but requested by user)
 CREATE TABLE public.survey_modules (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
