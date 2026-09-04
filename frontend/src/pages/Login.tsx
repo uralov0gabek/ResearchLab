@@ -42,27 +42,6 @@ const Login: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#FFFDF5] flex items-center justify-center p-4 text-slate-800 relative">
-      {/* Language Switcher */}
-      <div className="absolute top-4 right-4 z-50">
-        <div className="relative">
-          <button 
-            onClick={() => setIsLangOpen(!isLangOpen)}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white border border-gray-200 text-sm font-medium text-slate-700 hover:bg-gray-50 shadow-sm"
-            aria-haspopup="true"
-          >
-            <Globe size={16} className="text-slate-500" />
-            <span className="uppercase">{i18n.language}</span>
-          </button>
-          
-          {isLangOpen && (
-            <div className="absolute right-0 mt-2 w-32 bg-white rounded-xl shadow-lg py-1 border border-gray-100">
-              <button onClick={() => changeLanguage('uz')} className="block w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-gray-50">O'zbekcha</button>
-              <button onClick={() => changeLanguage('en')} className="block w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-gray-50">English</button>
-              <button onClick={() => changeLanguage('ru')} className="block w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-gray-50">Русский</button>
-            </div>
-          )}
-        </div>
-      </div>
 
       <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8">
         <div className="flex flex-col items-center mb-8">

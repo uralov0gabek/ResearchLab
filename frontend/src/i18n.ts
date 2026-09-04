@@ -109,7 +109,7 @@ const resources = {
   }
 };
 
-const savedLanguage = localStorage.getItem('i18nextLng') || 'uz';
+const savedLanguage = 'en';
 
 i18n
   .use(initReactI18next)

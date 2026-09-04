@@ -88,23 +88,6 @@ const AdminLayout: React.FC = () => {
         </nav>
 
         <div className="p-4 border-t border-slate-800 space-y-4">
-          <div className="relative">
-            <button 
-              onClick={() => setIsLangOpen(!isLangOpen)}
-              className="flex items-center w-full px-3 py-2.5 text-sm font-medium text-slate-300 rounded-lg hover:bg-slate-800 hover:text-white transition-colors"
-              aria-haspopup="true"
-            >
-              <Globe className="w-5 h-5 mr-3 flex-shrink-0" />
-              <span className="truncate uppercase">{i18n.language}</span>
-            </button>
-            {isLangOpen && (
-              <div className="absolute bottom-full left-0 mb-2 w-full bg-slate-800 rounded-lg shadow-lg py-1 border border-slate-700 z-50 overflow-hidden">
-                <button onClick={() => changeLanguage('uz')} className="block w-full text-left px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white">O'zbekcha</button>
-                <button onClick={() => changeLanguage('en')} className="block w-full text-left px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white">English</button>
-                <button onClick={() => changeLanguage('ru')} className="block w-full text-left px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white">Русский</button>
-              </div>
-            )}
-          </div>
 
           <button
             onClick={handleSignOut}
