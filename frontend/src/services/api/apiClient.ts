@@ -6,8 +6,6 @@ export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
   const { data } = await supabase.auth.getSession();
   const token = data?.session?.access_token;
 
-  console.log('Frontend Token Check:', token ? 'Token Exists' : 'TOKEN MISSING');
-
   const PUBLIC_ENDPOINTS = [
     { method: 'GET', endpoint: '/questions' },
     { method: 'POST', endpoint: '/responses' },

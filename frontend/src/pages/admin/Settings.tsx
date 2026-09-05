@@ -105,7 +105,7 @@ const Settings: React.FC = () => {
               <p className="text-slate-500">
                 {emailLoading
                   ? "Loading email..."
-                  : adminEmail || user?.email || "nurbeksaliyev08@gmail.com"}
+                  : adminEmail || user?.email || "admin@example.com"}
               </p>
               <span className="inline-block mt-2 px-3 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full border border-green-200">
                 Active Session

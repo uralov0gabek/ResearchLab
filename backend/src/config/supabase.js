@@ -4,7 +4,6 @@ require('dotenv').config();
 // We need SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY from .env
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-console.log('Using Service Key starting with:', supabaseServiceKey ? supabaseServiceKey.substring(0, 20) : 'undefined');
 
 if (!supabaseUrl || !supabaseServiceKey) {
   console.warn('Missing Supabase environment variables. Make sure SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are set in the backend/.env file.');

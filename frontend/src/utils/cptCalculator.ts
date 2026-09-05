@@ -20,9 +20,7 @@ export interface LotteryRow {
  * Expected structure for lottery questions is an array of 'A' or 'B'.
  */
 export const calculateCPTParameters = (answers: Record<string, unknown>) => {
-  // In a full implementation, you would parse the actual lottery questions
-  // and map the user's A/B choices to find the switching point.
-  // For the sake of the structural implementation based on the prompt:
+  // NOTE: This is a legacy stub replaced by backend's cptService.js
   // 
   // Certainty Equivalent (CE): Find highest sure amount rejected and lowest accepted. CE = (highest rejected + lowest accepted) / 2
   // Alpha (α): α_i = ln(0.5) / ln(CE_i / X)
@@ -31,8 +29,6 @@ export const calculateCPTParameters = (answers: Record<string, unknown>) => {
 
   // As a placeholder calculation until the exact lottery values are supplied:
   let alphaSum = 0;
-  const betaSum = 0;
-  const lambdaSum = 0;
   let count = 0;
 
   // Iterate over answers, identify lottery blocks, and calculate
@@ -72,7 +68,7 @@ export const calculateCPTParameters = (answers: Record<string, unknown>) => {
 
   return {
     alpha: count > 0 ? alphaSum / count : 0.88,
-    beta: count > 0 ? betaSum / count : 0.88,
-    lambda: count > 0 ? lambdaSum / count : 2.25
+    beta: 0.88,
+    lambda: 2.25
   };
 };

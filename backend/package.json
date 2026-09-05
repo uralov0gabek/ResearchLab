@@ -1,14 +1,15 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "description": "",
+  "description": "Backend API for Research Lab Survey Platform",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
     "test": "jest"
   },
   "keywords": [],
-  "author": "",
+  "author": "Ogabek Uralov (Research Lab)",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
@@ -19,10 +20,10 @@
     "express-rate-limit": "^8.7.0",
     "helmet": "^8.3.0",
     "hpp": "^0.2.3",
-    "jsonwebtoken": "^9.0.3",
-    "xss-clean": "^0.1.4"
+    "jsonwebtoken": "^9.0.3"
   },
   "devDependencies": {
+    "nodemon": "^3.0.0",
     "jest": "^30.5.0",
     "supertest": "^7.2.2"
   }

@@ -35,11 +35,15 @@ build/
 .pnp.js
 
 # Testing and Coverage
-/coverage
-/test-results
-/playwright-report
+coverage/
+backend/coverage/
+frontend/coverage/
+test-results/
+playwright-report/
+e2e/
 /playwright/.cache/
 blob-report/
+.nyc_output
 
 # OS Files
 .DS_Store
@@ -48,7 +52,7 @@ Thumbs.db
 # Vercel / CI
 .vercel
 
-# Exclude local testing scripts based on user request
+# Exclude local testing scripts
 /tests/
 backend/__tests__/
 backend/test_*.js
@@ -58,10 +62,5 @@ frontend/src/setupTests.ts
 playwright.config.ts
 playwright/
 
-# Testing
-coverage/
-e2e/
-playwright-report/
-test-results/
-
+# Project specifics
 loss_aversion_research.pdf

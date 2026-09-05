@@ -26,7 +26,7 @@ CREATE TABLE public.questions (
     type TEXT NOT NULL, -- e.g., 'multiple_choice', 'single_choice', 'short_text', 'number_input', 'slider', 'matrix'
     options JSONB, -- For multiple choice options or slider config
     conditional_logic JSONB, -- Defines if this question depends on others
-    order_index INTEGER DEFAULT 0,
+    order_index INTEGER DEFAULT 0, -- Consider adding UNIQUE (module_id, order_index)
     required BOOLEAN DEFAULT true,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
@@ -59,22 +59,30 @@ CREATE TABLE public.responses (
 
 -- 1. Survey Modules
 ALTER TABLE public.survey_modules ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Anyone can view modules" ON public.survey_modules;
 CREATE POLICY "Anyone can view modules" ON public.survey_modules FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Admin can manage modules" ON public.survey_modules;
 CREATE POLICY "Admin can manage modules" ON public.survey_modules FOR ALL USING (auth.role() = 'authenticated');
 
 -- 2. Questions
 ALTER TABLE public.questions ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Anyone can view questions" ON public.questions;
 CREATE POLICY "Anyone can view questions" ON public.questions FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Admin can manage questions" ON public.questions;
 CREATE POLICY "Admin can manage questions" ON public.questions FOR ALL USING (auth.role() = 'authenticated');
 
 -- 3. CPT Tasks
 ALTER TABLE public.cpt_tasks ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Anyone can view cpt_tasks" ON public.cpt_tasks;
 CREATE POLICY "Anyone can view cpt_tasks" ON public.cpt_tasks FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Admin can manage cpt_tasks" ON public.cpt_tasks;
 CREATE POLICY "Admin can manage cpt_tasks" ON public.cpt_tasks FOR ALL USING (auth.role() = 'authenticated');
 
 -- 4. Responses
 ALTER TABLE public.responses ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Anyone can insert responses" ON public.responses;
 CREATE POLICY "Anyone can insert responses" ON public.responses FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "Authenticated users can view responses" ON public.responses;
 CREATE POLICY "Authenticated users can view responses" ON public.responses FOR SELECT USING (auth.role() = 'authenticated');
 
 -- Grant permissions to standard Supabase roles
