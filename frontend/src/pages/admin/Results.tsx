@@ -25,7 +25,7 @@ const Results: React.FC = () => {
           apiFetch('/responses').catch(() => [])
         ]);
         setQuestions(qData);
-        setResponses(rData);
+        setResponses(Array.isArray(rData) ? rData : (rData.responses || []));
       } catch (err) {
         console.error('Failed to fetch data', err);
       } finally {
