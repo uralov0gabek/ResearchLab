@@ -74,7 +74,7 @@ const PublicSurvey: React.FC = () => {
       }
       return false;
     } else if (q.type === 'slider') {
-      return answer !== undefined && answer !== null;
+      return true; // Default value is handled in the UI and submitted
     } else if (q.type === 'matrix') {
       if (!answer || typeof answer !== 'object') return false;
       const rows = (q.options as any)?.rows as any[];

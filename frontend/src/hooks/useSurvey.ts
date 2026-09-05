@@ -169,9 +169,18 @@ export const useSurvey = () => {
     setIsSubmitting(true);
     setSubmitError(null);
     try {
+      const finalAnswers = { ...answers };
+      questions.forEach(q => {
+        if (q.type === 'slider' && finalAnswers[q.id] === undefined) {
+          const min = (q.options as any)?.min || 0;
+          const max = (q.options as any)?.max || 100;
+          finalAnswers[q.id] = (min + max) / 2;
+        }
+      });
+
       await apiFetch('/responses', {
         method: 'POST',
-        body: JSON.stringify({ userId: sessionId, answers })
+        body: JSON.stringify({ userId: sessionId, answers: finalAnswers })
       });
 
       sessionStorage.removeItem(STORAGE_KEY);
