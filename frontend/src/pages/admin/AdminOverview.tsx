@@ -159,7 +159,7 @@ const AdminOverview: React.FC = () => {
               </h2>
               <div className="w-full flex justify-center">
                 <ResponsiveContainer width="100%" height={300}>
-                  <RadarChart cx="50%" cy="50%" outerRadius="75%" data={roleData}>
+                  <RadarChart cx="50%" cy="50%" outerRadius="60%" data={roleData} margin={{ top: 20, right: 40, bottom: 20, left: 40 }}>
                     <PolarGrid stroke="#E2E8F0" />
                     <PolarAngleAxis dataKey="role" tick={{ fill: '#0F172A', fontWeight: 600 }} />
                     <PolarRadiusAxis angle={30} domain={[0, 5]} tick={{ fill: '#64748B' }} />
