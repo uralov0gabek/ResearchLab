@@ -112,7 +112,7 @@ const Responses: React.FC = () => {
           <p className="text-slate-500 text-sm mt-1">Try adjusting your search criteria.</p>
         </div>
       ) : (
-        <div className="overflow-x-auto w-full">
+        <div className="overflow-hidden w-full">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200">
@@ -162,8 +162,8 @@ const Responses: React.FC = () => {
                                 const questionTitle = q ? getLocalizedText(q.question_text || q.title || q.block_name, 'en') : qId;
                                 return (
                                   <div key={qId} className="text-sm border-b border-slate-100 pb-3 last:border-0 last:pb-0">
-                                    <div className="text-slate-500 mb-1 font-medium">{questionTitle}</div>
-                                    <div className="text-slate-900 bg-slate-50 px-3 py-2 rounded-lg inline-block max-w-full break-words">
+                                    <div className="text-slate-500 mb-1 font-medium break-words whitespace-normal">{questionTitle}</div>
+                                    <div className="text-slate-900 bg-slate-50 px-3 py-2 rounded-lg inline-block max-w-full break-words whitespace-pre-wrap">
                                       {typeof ans === 'object' ? JSON.stringify(ans) : String(ans)}
                                     </div>
                                   </div>
