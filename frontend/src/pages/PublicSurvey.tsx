@@ -73,6 +73,16 @@ const PublicSurvey: React.FC = () => {
         return rows.length > 0 && lotteryAnswer.choices.length === rows.length && lotteryAnswer.choices.every((c: any) => c === 'A' || c === 'B');
       }
       return false;
+    } else if (q.type === 'slider') {
+      return answer !== undefined && answer !== null;
+    } else if (q.type === 'matrix') {
+      if (!answer || typeof answer !== 'object') return false;
+      const rows = (q.options as any)?.rows as any[];
+      if (!rows) return false;
+      return rows.every(r => {
+        const rValue = typeof r === 'string' ? r : JSON.stringify(r);
+        return !!(answer as Record<string, string>)[rValue];
+      });
     }
     return false;
   });
