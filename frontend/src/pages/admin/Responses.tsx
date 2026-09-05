@@ -163,7 +163,7 @@ const Responses: React.FC = () => {
                                 return (
                                   <div key={qId} className="text-sm border-b border-slate-100 pb-3 last:border-0 last:pb-0">
                                     <div className="text-slate-500 mb-1 font-medium">{questionTitle}</div>
-                                    <div className="text-slate-900 bg-slate-50 px-3 py-2 rounded-lg inline-block">
+                                    <div className="text-slate-900 bg-slate-50 px-3 py-2 rounded-lg inline-block max-w-full break-words">
                                       {typeof ans === 'object' ? JSON.stringify(ans) : String(ans)}
                                     </div>
                                   </div>
