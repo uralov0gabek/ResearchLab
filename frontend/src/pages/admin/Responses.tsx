@@ -68,7 +68,7 @@ const Responses: React.FC = () => {
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden animate-in fade-in duration-500">
+    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden animate-in fade-in duration-500 max-w-full">
       <div className="p-6 border-b border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-slate-800">Raw Responses</h2>
@@ -112,7 +112,7 @@ const Responses: React.FC = () => {
           <p className="text-slate-500 text-sm mt-1">Try adjusting your search criteria.</p>
         </div>
       ) : (
-        <div className="overflow-hidden w-full">
+        <div className="overflow-x-auto w-full">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200">
@@ -148,7 +148,7 @@ const Responses: React.FC = () => {
                   {expandedRows.has(row.id) && (
                     <tr className="bg-slate-50/50">
                       <td colSpan={6} className="px-6 py-6 border-b border-slate-100">
-                        <div className="max-w-4xl mx-auto bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                        <div className="max-w-full bg-white p-6 rounded-xl border border-slate-200 shadow-sm overflow-x-hidden">
                           <h4 className="font-semibold text-slate-800 mb-4 flex items-center gap-2">
                             Detailed Answers for Response
                           </h4>
