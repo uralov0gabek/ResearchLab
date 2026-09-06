@@ -157,26 +157,30 @@ const AdminOverview: React.FC = () => {
               <h2 className="text-lg sm:text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
                 Loss Aversion by Role
               </h2>
-              <div className="w-full flex justify-center">
-                <ResponsiveContainer width="100%" height={420}>
-                  <RadarChart cx="50%" cy="50%" outerRadius="45%" data={roleData} margin={{ top: 40, right: 120, bottom: 40, left: 120 }}>
+              <div className="w-full flex justify-center mt-4">
+                <ResponsiveContainer width="100%" height={450}>
+                  <RadarChart cx="50%" cy="50%" outerRadius="65%" data={roleData} margin={{ top: 20, right: 90, bottom: 20, left: 90 }}>
                     <PolarGrid stroke="#E2E8F0" />
                     <PolarAngleAxis
                       dataKey="role"
                       tick={({ x, y, payload, textAnchor }) => (
-                        <text x={x} y={y} textAnchor={textAnchor} fill="#0F172A" fontWeight={600} fontSize={13}>
+                        <text x={x} y={y} textAnchor={textAnchor} fill="#0F172A" fontWeight={700} fontSize={14}>
                           {(payload.value as string).split(' / ').map((line: string, i: number) => (
-                            <tspan key={i} x={x} dy={i === 0 ? 0 : 16}>{line}</tspan>
+                            <tspan key={i} x={x} dy={i === 0 ? 0 : 18}>{line}</tspan>
                           ))}
                         </text>
                       )}
                     />
-                    <PolarRadiusAxis angle={30} domain={[0, 5]} tick={{ fill: '#64748B', fontSize: 12 }} />
-                    <Radar name="Loss Aversion (Lambda)" dataKey="avgLossAversion" stroke="#0F172A" strokeWidth={2} fill="#0F172A" fillOpacity={0.7} />
-                    <Tooltip 
-                      contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                    <PolarRadiusAxis 
+                      angle={30} 
+                      domain={[0, Math.max(5, ...roleData.map(d => d.avgLossAversion || 0))]} 
+                      tick={{ fill: '#64748B', fontSize: 13, fontWeight: 500 }} 
                     />
-                    <Legend />
+                    <Radar name="Loss Aversion (Lambda)" dataKey="avgLossAversion" stroke="#0F172A" strokeWidth={3} fill="#0F172A" fillOpacity={0.7} />
+                    <Tooltip 
+                      contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontSize: '14px' }}
+                    />
+                    <Legend wrapperStyle={{ paddingTop: '20px', fontSize: '15px', fontWeight: 600 }} />
                   </RadarChart>
                 </ResponsiveContainer>
               </div>
