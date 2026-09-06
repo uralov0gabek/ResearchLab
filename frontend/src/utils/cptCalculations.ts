@@ -128,21 +128,39 @@ export interface CPTSummary {
   lambda: number | null;
 }
 
-export const processUserCPT = (answers: Record<string, unknown>, questions: { id: string; text?: string }[]): CPTSummary => {
-  // Find questions by text prefix since IDs are UUIDs
-  const G1 = questions.find(q => q.text && q.text.startsWith('G1.'));
-  const G2 = questions.find(q => q.text && q.text.startsWith('G2.'));
-  const G3 = questions.find(q => q.text && q.text.startsWith('G3.'));
+import { getLocalizedText } from './localization';
 
-  const L1 = questions.find(q => q.text && q.text.startsWith('L1.'));
-  const L2 = questions.find(q => q.text && q.text.startsWith('L2.'));
-  const L3 = questions.find(q => q.text && q.text.startsWith('L3.'));
+export const processUserCPT = (answers: Record<string, unknown>, questions: any[]): CPTSummary => {
+  const findQ = (prefix: string) => questions.find(q => {
+    const textStr = q.question_text || q.text || q.title || '';
+    const localized = getLocalizedText(textStr, 'en');
+    return localized.startsWith(prefix);
+  });
 
-  const M1 = questions.find(q => q.text && q.text.startsWith('M1.'));
-  const M2 = questions.find(q => q.text && q.text.startsWith('M2.'));
-  const M3 = questions.find(q => q.text && q.text.startsWith('M3.'));
+  const G1 = findQ('G1.');
+  const G2 = findQ('G2.');
+  const G3 = findQ('G3.');
 
-  const getAnswer = (q?: { id: string; text?: string }) => q ? answers[q.id] as LotteryResponse : null;
+  const L1 = findQ('L1.');
+  const L2 = findQ('L2.');
+  const L3 = findQ('L3.');
+
+  const M1 = findQ('M1.');
+  const M2 = findQ('M2.');
+  const M3 = findQ('M3.');
+
+  const getAnswer = (q?: any) => {
+    if (!q) return null;
+    const ans = answers[q.id];
+    if (typeof ans === 'string') {
+      try {
+        return JSON.parse(ans) as LotteryResponse;
+      } catch {
+        return null;
+      }
+    }
+    return ans as LotteryResponse;
+  };
 
   // Constants based on PDF specification
   const G1_X = 1500000, G2_X = 600000, G3_X = 3000000;

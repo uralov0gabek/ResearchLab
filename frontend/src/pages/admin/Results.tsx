@@ -3,6 +3,7 @@ import { LineChart, Download, Users, Brain, Loader2 } from 'lucide-react';
 import { apiFetch } from '../../services/api/apiClient';
 import { processUserCPT } from '../../utils/cptCalculations';
 import type { Question } from '../../types';
+import { getLocalizedText } from '../../utils/localization';
 
 interface GroupStats {
   count: number;
@@ -61,7 +62,12 @@ const Results: React.FC = () => {
       const cpt = processUserCPT(answers, questions);
       
       // Determine cohort based on "R1" question
-      const r1Q = questions.find(q => q.text && q.text.startsWith('R1.'));
+      const r1Q = questions.find(q => {
+        const qAny = q as any;
+        const textStr = qAny.question_text || qAny.text || qAny.title || '';
+        const localized = getLocalizedText(textStr, 'en');
+        return localized.startsWith('R1.');
+      });
       let cohortKey = 'Students & Others';
       
       if (r1Q && answers[r1Q.id]) {
@@ -132,11 +138,35 @@ const Results: React.FC = () => {
 
   const formatParam = (val: number | null) => val ? val.toFixed(3) : '-';
 
+  const handleExportCSV = () => {
+    if (!stats || stats.totalResponses === 0) return;
+    
+    const headers = ['Cohort', 'Count', 'Alpha (a)', 'Beta (b)', 'Lambda (l)'];
+    const rows = Object.entries(stats.cohorts).map(([name, data]) => {
+      return `"${name}",${data.count},${formatParam(data.alpha)},${formatParam(data.beta)},${formatParam(data.lambda)}`;
+    });
+    
+    const csvContent = "data:text/csv;charset=utf-8," 
+      + headers.join(",") + "\n"
+      + rows.join("\n");
+      
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "cpt_cohort_analytics.csv");
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  };
+
   return (
     <div className="space-y-8">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Results & CPT Analytics</h1>
-        <button className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors flex items-center gap-2">
+        <button 
+          onClick={handleExportCSV}
+          className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors flex items-center gap-2"
+        >
           <Download className="w-4 h-4" />
           CSV yuklash
         </button>
