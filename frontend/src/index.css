@@ -108,3 +108,23 @@ input[type="number"]::-webkit-outer-spin-button {
 input[type="number"] {
   -moz-appearance: textfield;
 }
+
+@layer components {
+  .custom-range {
+    @apply w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer;
+  }
+  .custom-range::-webkit-slider-thumb {
+    @apply appearance-none w-6 h-6 rounded-full bg-[#F4C542] shadow-md cursor-pointer border-none;
+    transition: transform 0.2s ease-in-out;
+  }
+  .custom-range::-webkit-slider-thumb:hover {
+    transform: scale(1.15);
+  }
+  .custom-range::-moz-range-thumb {
+    @apply w-6 h-6 rounded-full bg-[#F4C542] shadow-md cursor-pointer border-none;
+    transition: transform 0.2s ease-in-out;
+  }
+  .custom-range::-moz-range-thumb:hover {
+    transform: scale(1.15);
+  }
+}

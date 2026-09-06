@@ -185,7 +185,7 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
           step={step}
           value={val}
           onChange={(e) => onAnswerChange(question.id, Number(e.target.value))}
-          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#F4C542]"
+          className="custom-range"
         />
         <div className="flex justify-between text-sm font-medium text-slate-500">
           <span>{min}</span>

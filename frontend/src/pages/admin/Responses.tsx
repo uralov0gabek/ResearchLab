@@ -13,6 +13,33 @@ interface ProcessedResponse {
   answers?: Record<string, any>;
 }
 
+const formatAnswerForAdmin = (ans: any): string => {
+  let parsed = ans;
+  if (typeof ans === 'string') {
+    try {
+      parsed = JSON.parse(ans);
+    } catch (e) {
+      // not JSON string
+    }
+  }
+
+  if (typeof parsed === 'object' && parsed !== null) {
+    if (parsed.type === 'lottery_response' && Array.isArray(parsed.choices)) {
+      return parsed.choices
+        .map((c: string, i: number) => `Choice ${i + 1}: ${c || 'Not selected'}`)
+        .join('\n');
+    }
+    if (Array.isArray(parsed)) {
+      return parsed.join(', ');
+    }
+    return Object.entries(parsed)
+      .map(([key, value]) => `${key}: ${typeof value === 'object' ? JSON.stringify(value) : value}`)
+      .join('\n');
+  }
+
+  return String(ans);
+};
+
 const Responses: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [responsesData, setResponsesData] = useState<ProcessedResponse[]>([]);
@@ -164,7 +191,7 @@ const Responses: React.FC = () => {
                                   <div key={qId} className="text-sm border-b border-slate-100 pb-3 last:border-0 last:pb-0">
                                     <div className="text-slate-500 mb-1 font-medium break-words whitespace-normal">{questionTitle}</div>
                                     <div className="text-slate-900 bg-slate-50 px-3 py-2 rounded-lg inline-block max-w-full break-words whitespace-pre-wrap">
-                                      {typeof ans === 'object' ? JSON.stringify(ans) : String(ans)}
+                                      {formatAnswerForAdmin(ans)}
                                     </div>
                                   </div>
                                 );
