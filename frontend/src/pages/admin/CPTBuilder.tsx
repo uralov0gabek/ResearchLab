@@ -24,12 +24,17 @@ const CPTBuilder: React.FC = () => {
   
   const [formData, setFormData] = useState({
     title: '',
-    sure_amount: 50,
-    gamble_a_amount: 100,
-    gamble_a_prob: 50,
-    gamble_b_amount: 0,
-    gamble_b_prob: 50
+    sure_amount: 50 as number | string,
+    gamble_a_amount: 100 as number | string,
+    gamble_a_prob: 50 as number | string,
+    gamble_b_amount: 0 as number | string,
+    gamble_b_prob: 50 as number | string
   });
+
+  const formatNumber = (num: number | string) => {
+    if (num === '' || num === null || num === undefined) return '';
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  };
 
   const fetchTasks = async () => {
     setIsLoading(true);
@@ -53,10 +58,20 @@ const CPTBuilder: React.FC = () => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'number' ? Number(value) : value
-    }));
+    if (['sure_amount', 'gamble_a_amount', 'gamble_b_amount'].includes(name)) {
+      const rawValue = value.replace(/,/g, '');
+      if (rawValue === '' || !isNaN(Number(rawValue))) {
+        setFormData(prev => ({
+          ...prev,
+          [name]: rawValue === '' ? '' : Number(rawValue)
+        }));
+      }
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: type === 'number' ? Number(value) : value
+      }));
+    }
   };
 
   const handleSave = async () => {
@@ -71,11 +86,11 @@ const CPTBuilder: React.FC = () => {
         method: 'POST',
         body: JSON.stringify({
           title: formData.title,
-          sure_amount: formData.sure_amount,
-          gamble_a_amount: formData.gamble_a_amount,
-          gamble_a_prob: formData.gamble_a_prob,
-          gamble_b_amount: formData.gamble_b_amount,
-          gamble_b_prob: formData.gamble_b_prob
+          sure_amount: Number(formData.sure_amount),
+          gamble_a_amount: Number(formData.gamble_a_amount),
+          gamble_a_prob: Number(formData.gamble_a_prob),
+          gamble_b_amount: Number(formData.gamble_b_amount),
+          gamble_b_prob: Number(formData.gamble_b_prob)
         })
       });
       setIsConfiguring(false);
@@ -181,9 +196,9 @@ const CPTBuilder: React.FC = () => {
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Sure Amount ($)</label>
                 <input 
-                  type="number" 
+                  type="text" 
                   name="sure_amount"
-                  value={formData.sure_amount}
+                  value={formatNumber(formData.sure_amount)}
                   onChange={handleChange}
                   className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow" 
                 />
@@ -192,9 +207,9 @@ const CPTBuilder: React.FC = () => {
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Gamble Amount A ($)</label>
                 <input 
-                  type="number" 
+                  type="text" 
                   name="gamble_a_amount"
-                  value={formData.gamble_a_amount}
+                  value={formatNumber(formData.gamble_a_amount)}
                   onChange={handleChange}
                   className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow" 
                 />
@@ -212,9 +227,9 @@ const CPTBuilder: React.FC = () => {
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Gamble Amount B ($)</label>
                 <input 
-                  type="number" 
+                  type="text" 
                   name="gamble_b_amount"
-                  value={formData.gamble_b_amount}
+                  value={formatNumber(formData.gamble_b_amount)}
                   onChange={handleChange}
                   className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow" 
                 />
@@ -324,12 +339,12 @@ const CPTBuilder: React.FC = () => {
                   {tasks.map((task) => (
                     <tr key={task.id} className="hover:bg-slate-50 transition-colors">
                       <td className="px-6 py-4 font-medium text-slate-900">{task.title}</td>
-                      <td className="px-6 py-4">${task.sure_amount}</td>
+                      <td className="px-6 py-4">${formatNumber(task.sure_amount)}</td>
                       <td className="px-6 py-4">
-                        ${task.gamble_a_amount} ({task.gamble_a_prob}%)
+                        ${formatNumber(task.gamble_a_amount)} ({task.gamble_a_prob}%)
                       </td>
                       <td className="px-6 py-4">
-                        ${task.gamble_b_amount} ({task.gamble_b_prob}%)
+                        ${formatNumber(task.gamble_b_amount)} ({task.gamble_b_prob}%)
                       </td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex justify-end gap-2">
