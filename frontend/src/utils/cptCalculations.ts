@@ -128,27 +128,8 @@ export interface CPTSummary {
   lambda: number | null;
 }
 
-import { getLocalizedText } from './localization';
 
 export const processUserCPT = (answers: Record<string, unknown>, questions: any[]): CPTSummary => {
-  const findQ = (prefix: string) => questions.find(q => {
-    const textStr = q.question_text || q.text || q.title || '';
-    const localized = getLocalizedText(textStr, 'en');
-    return localized.startsWith(prefix);
-  });
-
-  const G1 = findQ('G1.');
-  const G2 = findQ('G2.');
-  const G3 = findQ('G3.');
-
-  const L1 = findQ('L1.');
-  const L2 = findQ('L2.');
-  const L3 = findQ('L3.');
-
-  const M1 = findQ('M1.');
-  const M2 = findQ('M2.');
-  const M3 = findQ('M3.');
-
   const getAnswer = (q?: any) => {
     if (!q) return null;
     const ans = answers[q.id];
@@ -162,31 +143,52 @@ export const processUserCPT = (answers: Record<string, unknown>, questions: any[
     return ans as LotteryResponse;
   };
 
-  // Constants based on PDF specification
-  const G1_X = 1500000, G2_X = 600000, G3_X = 3000000;
-  const L1_L = 1500000, L2_L = 600000, L3_L = 3000000;
-  const M1_L = 500000,  M2_L = 1000000, M3_L = 200000;
-
   const alphas: number[] = [], betas: number[] = [], lambdas: number[] = [];
+  const mixedTasks: { ans: LotteryResponse; L: number }[] = [];
 
-  // Gains -> Alphas
-  if (G1) { const ans = getAnswer(G1); if (ans) { const ce = calculateCE(ans); const a = calculateAlpha(ce, G1_X); if (a) alphas.push(a); } }
-  if (G2) { const ans = getAnswer(G2); if (ans) { const ce = calculateCE(ans); const a = calculateAlpha(ce, G2_X); if (a) alphas.push(a); } }
-  if (G3) { const ans = getAnswer(G3); if (ans) { const ce = calculateCE(ans); const a = calculateAlpha(ce, G3_X); if (a) alphas.push(a); } }
+  questions.forEach(q => {
+    if (q.type !== 'lottery' && q.type !== 'CPT') return;
+    const ans = getAnswer(q);
+    if (!ans || !ans.rows || ans.rows.length === 0) return;
 
-  // Losses -> Betas
-  if (L1) { const ans = getAnswer(L1); if (ans) { const ce = calculateCE(ans, true); const b = calculateBeta(ce, L1_L); if (b) betas.push(b); } }
-  if (L2) { const ans = getAnswer(L2); if (ans) { const ce = calculateCE(ans, true); const b = calculateBeta(ce, L2_L); if (b) betas.push(b); } }
-  if (L3) { const ans = getAnswer(L3); if (ans) { const ce = calculateCE(ans, true); const b = calculateBeta(ce, L3_L); if (b) betas.push(b); } }
+    const firstGamble = ans.rows[0].gamble.toLowerCase();
+    const hasWin = firstGamble.includes('win');
+    const hasLose = firstGamble.includes('lose');
+
+    if (hasWin && !hasLose) {
+      const match = firstGamble.match(/win ([\d,]+) uzs/i);
+      if (match) {
+        const X = parseInt(match[1].replace(/,/g, ''), 10);
+        const ce = calculateCE(ans);
+        const a = calculateAlpha(ce, X);
+        if (a) alphas.push(a);
+      }
+    } else if (hasLose && !hasWin) {
+      const match = firstGamble.match(/lose ([\d,]+) uzs/i);
+      if (match) {
+        const L = parseInt(match[1].replace(/,/g, ''), 10);
+        const ce = calculateCE(ans, true);
+        const b = calculateBeta(ce, L);
+        if (b) betas.push(b);
+      }
+    } else if (hasWin && hasLose) {
+      const match = firstGamble.match(/lose ([\d,]+) uzs/i);
+      if (match) {
+        const L = parseInt(match[1].replace(/,/g, ''), 10);
+        mixedTasks.push({ ans, L });
+      }
+    }
+  });
 
   const avgAlpha = alphas.length > 0 ? alphas.reduce((s, x) => s + x, 0) / alphas.length : null;
   const avgBeta = betas.length > 0 ? betas.reduce((s, x) => s + x, 0) / betas.length : null;
 
-  // Mixed -> Lambdas (requires Alpha and Beta)
   if (avgAlpha && avgBeta) {
-    if (M1) { const ans = getAnswer(M1); if (ans) { const gs = calculateMixedGStar(ans); const l = calculateLambda(avgAlpha, avgBeta, gs, M1_L); if (l) lambdas.push(l); } }
-    if (M2) { const ans = getAnswer(M2); if (ans) { const gs = calculateMixedGStar(ans); const l = calculateLambda(avgAlpha, avgBeta, gs, M2_L); if (l) lambdas.push(l); } }
-    if (M3) { const ans = getAnswer(M3); if (ans) { const gs = calculateMixedGStar(ans); const l = calculateLambda(avgAlpha, avgBeta, gs, M3_L); if (l) lambdas.push(l); } }
+    mixedTasks.forEach(({ ans, L }) => {
+      const gs = calculateMixedGStar(ans);
+      const l = calculateLambda(avgAlpha, avgBeta, gs, L);
+      if (l) lambdas.push(l);
+    });
   }
 
   const avgLambda = lambdas.length > 0 ? lambdas.reduce((s, x) => s + x, 0) / lambdas.length : null;

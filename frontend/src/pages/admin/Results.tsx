@@ -61,20 +61,20 @@ const Results: React.FC = () => {
       const answers = res.answers || {};
       const cpt = processUserCPT(answers, questions);
       
-      // Determine cohort based on "R1" question
+      // Determine cohort based on the activity question
       const r1Q = questions.find(q => {
         const qAny = q as any;
         const textStr = qAny.question_text || qAny.text || qAny.title || '';
-        const localized = getLocalizedText(textStr, 'en');
-        return localized.startsWith('R1.');
+        const localized = getLocalizedText(textStr, 'en').toLowerCase();
+        return localized.includes('what best describes your main current activity') || localized.startsWith('r1.');
       });
       let cohortKey = 'Students & Others';
       
       if (r1Q && answers[r1Q.id]) {
         const role = answers[r1Q.id] as string;
-        if (role.includes('Entrepreneur')) cohortKey = 'Founders';
-        else if (role.includes('investor')) cohortKey = 'Investors (VC)';
-        else if (role.includes('employee')) cohortKey = 'Employees/Workers';
+        if (role.toLowerCase().includes('entrepreneur')) cohortKey = 'Founders';
+        else if (role.toLowerCase().includes('investor') || role.toLowerCase().includes('venture capitalist')) cohortKey = 'Investors (VC)';
+        else if (role.toLowerCase().includes('employee')) cohortKey = 'Employees/Workers';
       }
 
       cohorts[cohortKey].count++;
