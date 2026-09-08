@@ -64,7 +64,7 @@ export const calculateMixedGStar = (lotteryRes: LotteryResponse) => {
   lotteryRes.rows.forEach((row, i) => {
     // In Mixed lotteries, the gamble changes, so we need to extract the Win amount from the text
     // "50% chance to win 400,000 UZS, 50% chance to lose 500,000 UZS"
-    const match = row.gamble.match(/win ([\d,]+) UZS/);
+    const match = row.gamble.match(/win \$?([\d,]+)\s*(?:UZS|USD)?/i);
     if (!match) return;
     const gain = parseInt(match[1].replace(/,/g, ''), 10);
 
@@ -156,7 +156,7 @@ export const processUserCPT = (answers: Record<string, unknown>, questions: any[
     const hasLose = firstGamble.includes('lose');
 
     if (hasWin && !hasLose) {
-      const match = firstGamble.match(/win ([\d,]+) uzs/i);
+      const match = firstGamble.match(/win \$?([\d,]+)\s*(?:uzs|usd)?/i);
       if (match) {
         const X = parseInt(match[1].replace(/,/g, ''), 10);
         const ce = calculateCE(ans);
@@ -164,7 +164,7 @@ export const processUserCPT = (answers: Record<string, unknown>, questions: any[
         if (a) alphas.push(a);
       }
     } else if (hasLose && !hasWin) {
-      const match = firstGamble.match(/lose ([\d,]+) uzs/i);
+      const match = firstGamble.match(/lose \$?([\d,]+)\s*(?:uzs|usd)?/i);
       if (match) {
         const L = parseInt(match[1].replace(/,/g, ''), 10);
         const ce = calculateCE(ans, true);
@@ -172,7 +172,7 @@ export const processUserCPT = (answers: Record<string, unknown>, questions: any[
         if (b) betas.push(b);
       }
     } else if (hasWin && hasLose) {
-      const match = firstGamble.match(/lose ([\d,]+) uzs/i);
+      const match = firstGamble.match(/lose \$?([\d,]+)\s*(?:uzs|usd)?/i);
       if (match) {
         const L = parseInt(match[1].replace(/,/g, ''), 10);
         mixedTasks.push({ ans, L });

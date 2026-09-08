@@ -753,7 +753,7 @@ const SurveyBuilder: React.FC = () => {
                          }}
                          className="w-full font-mono text-sm h-32 p-3 rounded border border-gray-300"
                          placeholder={`[
-  { "sureAmount": 200000, "gamble": "50% chance to win 1500000 UZS or 0 UZS" }
+  { "sureAmount": 20, "gamble": "50% chance to win 150 USD or 0 USD" }
 ]`}
                       />
                     </div>

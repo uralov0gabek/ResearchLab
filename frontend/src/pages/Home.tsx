@@ -24,7 +24,7 @@ const Home: React.FC = () => {
               Behavioral Economics Study 2026
             </div>
             <h1 className="text-4xl sm:text-5xl lg:text-7xl font-extrabold text-slate-900 tracking-tight leading-[1.1] mb-8">
-              {t('Discovering Generations')}
+              {t('Loss Aversion, Soviet Shocks, and Venture Risk in Uzbekistan')}
             </h1>
             <p className="text-xl text-gray-600 leading-relaxed mb-10 max-w-2xl">
               This research explores how people in Uzbekistan and post-Soviet Central Asia evaluate gains, losses, uncertainty, startup opportunities, and investment decisions.

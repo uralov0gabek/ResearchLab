@@ -43,8 +43,8 @@ const CPTQuestionCard: React.FC<CPTQuestionCardProps> = ({ rows, selectedValues,
                 }`}
               >
                 {row.sureAmount < 0 
-                  ? `Accept a sure loss of ${Math.abs(row.sureAmount).toLocaleString()} UZS` 
-                  : `Take ${row.sureAmount.toLocaleString()} UZS for sure`}
+                  ? `Accept a sure loss of $${Math.abs(row.sureAmount).toLocaleString()}` 
+                  : `Take $${row.sureAmount.toLocaleString()} for sure`}
               </motion.button>
             </div>
             
