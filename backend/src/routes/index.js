@@ -14,6 +14,7 @@ router.post('/questions', verifyAdmin, questionController.upsertQuestions);
 // Responses
 router.post('/responses', responseController.submitResponse);
 router.get('/responses', verifyAdmin, responseController.getResponses);
+router.delete('/responses/:id', verifyAdmin, responseController.deleteResponse);
 
 // Stats
 router.get('/stats', verifyAdmin, statsController.getDashboardStats);

@@ -31,7 +31,21 @@ const getResponses = async (req, res, next) => {
   }
 };
 
+/**
+ * Controller to handle deleting a response
+ */
+const deleteResponse = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    await responseService.deleteResponse(id);
+    res.json({ success: true });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   submitResponse,
-  getResponses
+  getResponses,
+  deleteResponse
 };

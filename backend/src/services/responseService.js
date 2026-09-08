@@ -77,7 +77,22 @@ const fetchResponses = async () => {
   return processed;
 };
 
+/**
+ * Deletes a response by its ID
+ * @param {string} id - Response ID
+ */
+const deleteResponse = async (id) => {
+  const { error } = await supabaseAdmin
+    .from('responses')
+    .delete()
+    .eq('id', id);
+    
+  if (error) throw new AppError(error.message || 'Database error', 500);
+  return true;
+};
+
 module.exports = {
   saveResponse,
-  fetchResponses
+  fetchResponses,
+  deleteResponse
 };

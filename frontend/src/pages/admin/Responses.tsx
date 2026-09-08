@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { apiFetch } from '../../services/api/apiClient';
-import { Loader2, Search, Download, ChevronDown, ChevronUp } from 'lucide-react';
+import { Loader2, Search, Download, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 import { getLocalizedText } from '../../utils/localization';
+import { processUserCPT } from '../../utils/cptCalculations';
 
 interface ProcessedResponse {
   id: string;
@@ -73,7 +74,10 @@ const Responses: React.FC = () => {
     const headers = ['ID', 'User ID', 'Date', 'Alpha', 'Beta', 'Lambda'];
     const csvContent = "data:text/csv;charset=utf-8," 
       + headers.join(",") + "\n"
-      + responsesData.map(r => `${r.id},${r.user_id || 'Anonymous'},${r.date},${r.alpha},${r.beta},${r.lambda}`).join("\n");
+      + responsesData.map(r => {
+          const cpt = processUserCPT(r.answers || {}, questions);
+          return `${r.id},${r.user_id || 'Anonymous'},${r.date},${formatParam(cpt.alpha)},${formatParam(cpt.beta)},${formatParam(cpt.lambda)}`;
+        }).join("\n");
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
@@ -93,6 +97,20 @@ const Responses: React.FC = () => {
     else newSet.add(id);
     setExpandedRows(newSet);
   };
+
+  const handleDelete = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!window.confirm('Are you sure you want to delete this response?')) return;
+    try {
+      await apiFetch(`/responses/${id}`, { method: 'DELETE' });
+      setResponsesData(responsesData.filter(r => r.id !== id));
+    } catch (err) {
+      console.error('Failed to delete response', err);
+      alert('Failed to delete response');
+    }
+  };
+
+  const formatParam = (val: number | null) => val ? val.toFixed(3) : 'N/A';
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden animate-in fade-in duration-500 max-w-full">
@@ -149,6 +167,7 @@ const Responses: React.FC = () => {
                 <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">α</th>
                 <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">β</th>
                 <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">λ</th>
+                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -168,13 +187,22 @@ const Responses: React.FC = () => {
                       {row.user_id || 'Anonymous'}
                     </td>
                     <td className="px-6 py-4 text-sm text-slate-700 font-medium">{row.date}</td>
-                    <td className="px-6 py-4 text-sm text-slate-700">{row.alpha}</td>
-                    <td className="px-6 py-4 text-sm text-slate-700">{row.beta}</td>
-                    <td className="px-6 py-4 text-sm text-slate-700">{row.lambda}</td>
+                    <td className="px-6 py-4 text-sm text-slate-700">{formatParam(processUserCPT(row.answers || {}, questions).alpha)}</td>
+                    <td className="px-6 py-4 text-sm text-slate-700">{formatParam(processUserCPT(row.answers || {}, questions).beta)}</td>
+                    <td className="px-6 py-4 text-sm text-slate-700">{formatParam(processUserCPT(row.answers || {}, questions).lambda)}</td>
+                    <td className="px-6 py-4 text-sm text-right">
+                      <button
+                        onClick={(e) => handleDelete(row.id, e)}
+                        className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                        title="Delete response"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </td>
                   </tr>
                   {expandedRows.has(row.id) && (
                     <tr className="bg-slate-50/50">
-                      <td colSpan={6} className="px-6 py-6 border-b border-slate-100">
+                      <td colSpan={7} className="px-6 py-6 border-b border-slate-100">
                         <div className="max-w-full bg-white p-6 rounded-xl border border-slate-200 shadow-sm overflow-x-hidden">
                           <h4 className="font-semibold text-slate-800 mb-4 flex items-center gap-2">
                             Detailed Answers for Response
