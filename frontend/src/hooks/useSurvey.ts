@@ -17,7 +17,7 @@ const toStableString = (val: any): string => {
 
 const STORAGE_KEY = 'survey_session_data';
 // Versioned cache key — bump version to invalidate old cached question formats
-const QUESTIONS_CACHE_KEY = 'survey_questions_cache_v2';
+const QUESTIONS_CACHE_KEY = 'survey_questions_cache_v3';
 
 
 export const useSurvey = () => {
