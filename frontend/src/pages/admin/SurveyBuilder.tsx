@@ -738,9 +738,32 @@ const SurveyBuilder: React.FC = () => {
                         <h4 className="font-semibold text-slate-800">Cumulative Prospect Theory Lottery</h4>
                       </div>
                       <p className="text-sm text-slate-600 leading-relaxed mb-4">
-                        Define the rows for the A/B choices. For example: "50% chance to win X and 50% chance to win Y."
-                        <br />You should define this in JSON format for the options field, e.g.:
+                        The options below represent the CPT tasks. You can manually edit the JSON or load the latest tasks directly from the CPT Builder database.
                       </p>
+                      
+                      <button
+                        onClick={async () => {
+                          try {
+                            const tasks = await apiFetch('/cpt-tasks');
+                            if (tasks && Array.isArray(tasks)) {
+                              const formattedOptions = tasks.map((t: any) => ({
+                                id: t.id,
+                                sureAmount: t.sure_amount,
+                                gamble: `${t.gamble_a_prob}% chance to win $${t.gamble_a_amount} or ${t.gamble_b_prob}% chance to win $${t.gamble_b_amount}`
+                              }));
+                              updateQuestion(q.id, { options: formattedOptions });
+                              alert(`Successfully loaded ${formattedOptions.length} CPT tasks from database!`);
+                            }
+                          } catch (err) {
+                            alert('Failed to load CPT tasks from database.');
+                            console.error(err);
+                          }
+                        }}
+                        className="mb-4 px-4 py-2 bg-[#F4C542] hover:bg-[#d4a832] text-white font-semibold rounded-lg transition-colors flex items-center gap-2 text-sm"
+                      >
+                        <Dices size={16} /> Load CPT Tasks from Database
+                      </button>
+
                       <textarea
                          value={typeof q.options === 'string' ? q.options : JSON.stringify(q.options, null, 2)}
                          onChange={(e) => {
@@ -751,7 +774,7 @@ const SurveyBuilder: React.FC = () => {
                              updateQuestion(q.id, { options: e.target.value });
                            }
                          }}
-                         className="w-full font-mono text-sm h-32 p-3 rounded border border-gray-300"
+                         className="w-full font-mono text-sm h-48 p-3 rounded border border-gray-300"
                          placeholder={`[
   { "sureAmount": 20, "gamble": "50% chance to win 150 USD or 0 USD" }
 ]`}
