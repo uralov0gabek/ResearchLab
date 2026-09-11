@@ -28,6 +28,7 @@ const saveResponse = async (userId, answers) => {
 
   // Inject session ID into answers for tracking without violating FK
   const finalAnswers = { ...answers, session_id: userId };
+  const completed_at = new Date().toISOString();
 
   // Insert into responses table
   const { error: responseError } = await supabaseAdmin
@@ -36,7 +37,7 @@ const saveResponse = async (userId, answers) => {
       user_id: null, // Always null for anonymous users to avoid FK violations
       answers: finalAnswers,
       calculated_cpt_parameters: final_calculated,
-      completed_at: new Date().toISOString()
+      completed_at: completed_at
     });
 
   if (responseError) throw new AppError(responseError.message || 'Database error', 500);
