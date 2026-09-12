@@ -46,7 +46,10 @@ const saveResponse = async (userId, answers) => {
   if (process.env.GOOGLE_SHEETS_WEBHOOK_URL) {
     try {
       // Fetch questions to map IDs to readable text
-      const { data: questions } = await supabaseAdmin.from('questions').select('id, question_text, title');
+      const { data: questions, error } = await supabaseAdmin.from('questions').select('id, question_text');
+      if (error) {
+        console.error('Error fetching questions for webhook:', error);
+      }
       
       let readableAnswers = {};
       if (questions) {
