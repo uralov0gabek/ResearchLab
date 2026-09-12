@@ -42,6 +42,23 @@ const saveResponse = async (userId, answers) => {
 
   if (responseError) throw new AppError(responseError.message || 'Database error', 500);
 
+  // Send to Google Sheets Webhook if configured
+  if (process.env.GOOGLE_SHEETS_WEBHOOK_URL) {
+    try {
+      fetch(process.env.GOOGLE_SHEETS_WEBHOOK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: userId,
+          answers: finalAnswers,
+          cpt: final_calculated
+        })
+      }).catch(err => console.error('Failed to send to Google Sheets Webhook:', err));
+    } catch (err) {
+      console.error('Webhook fetch error:', err);
+    }
+  }
+
   return true;
 };
 
