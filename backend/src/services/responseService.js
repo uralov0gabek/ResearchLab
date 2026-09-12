@@ -45,12 +45,39 @@ const saveResponse = async (userId, answers) => {
   // Send to Google Sheets Webhook if configured
   if (process.env.GOOGLE_SHEETS_WEBHOOK_URL) {
     try {
+      // Fetch questions to map IDs to readable text
+      const { data: questions } = await supabaseAdmin.from('questions').select('id, question_text, title');
+      
+      let readableAnswers = {};
+      if (questions) {
+        for (const [key, val] of Object.entries(finalAnswers)) {
+          if (key === 'session_id') {
+            readableAnswers['Session ID'] = val;
+            continue;
+          }
+          const q = questions.find(q => q.id === key);
+          let qText = q ? (q.question_text || q.title || key) : key;
+          
+          // Try to parse localization JSON if it's a stringified object
+          if (typeof qText === 'string' && qText.startsWith('{')) {
+            try {
+              const parsed = JSON.parse(qText);
+              qText = parsed.en || parsed.uz || parsed.ru || qText;
+            } catch(e) {}
+          }
+          
+          readableAnswers[qText] = val;
+        }
+      } else {
+        readableAnswers = finalAnswers;
+      }
+
       fetch(process.env.GOOGLE_SHEETS_WEBHOOK_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userId: userId,
-          answers: finalAnswers,
+          answers: readableAnswers,
           cpt: final_calculated
         })
       }).catch(err => console.error('Failed to send to Google Sheets Webhook:', err));
