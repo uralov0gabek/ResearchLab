@@ -397,8 +397,8 @@ const SurveyBuilder: React.FC = () => {
               <p className="text-gray-500 mb-6">Start building your survey by adding a new question below.</p>
             </div>
           ) : activeBlockQuestions.map((q, index) => (
-            <div key={q.id} className="bg-white rounded-2xl shadow-sm border border-gray-200/80 overflow-hidden transition-all hover:shadow-md">
-              <div className="flex items-center justify-between p-4 bg-gray-50/50 border-b border-gray-100">
+            <div key={q.id} className="bg-white rounded-2xl shadow-sm border border-gray-200/80 transition-all hover:shadow-md">
+              <div className="flex items-center justify-between p-4 bg-gray-50/50 border-b border-gray-100 rounded-t-2xl">
                 <div className="flex items-center gap-3">
                   <span className="flex items-center justify-center w-6 h-6 rounded-full bg-slate-200 text-slate-700 text-xs font-bold">
                     {index + 1}
