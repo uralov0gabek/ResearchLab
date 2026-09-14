@@ -51,11 +51,17 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
     );
   }
 
-  if (question.type === 'lottery' && question.options) {
+  if (question.type === 'lottery' && Array.isArray(question.options)) {
+    const validRows = question.options.filter((row: any) => typeof row === 'object' && row.sureAmount != null) as LotteryRow[];
+    
+    if (validRows.length === 0) {
+      return <div className="text-gray-500 italic">No valid CPT tasks configured for this question.</div>;
+    }
+
     return (
       <CPTQuestionCard
         questionId={question.id}
-        rows={question.options as LotteryRow[]}
+        rows={validRows}
         selectedValues={answer?.selectedValues || {}}
         onSelect={(rowIndex, choice) => {
           const currentChoices = answer?.choices ? [...answer.choices] : new Array(question.options.length).fill(null);

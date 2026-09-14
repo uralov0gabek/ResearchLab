@@ -42,9 +42,11 @@ const CPTQuestionCard: React.FC<CPTQuestionCardProps> = ({ rows, selectedValues,
                     : 'bg-white border-slate-200 text-slate-700 hover:border-blue-300 hover:bg-blue-50/50'
                 }`}
               >
-                {row.sureAmount < 0 
-                  ? `Accept a sure loss of $${Math.abs(row.sureAmount).toLocaleString()}` 
-                  : `Take $${row.sureAmount.toLocaleString()} for sure`}
+                {typeof row === 'object' && row.sureAmount != null
+                  ? (row.sureAmount < 0 
+                      ? `Accept a sure loss of $${Math.abs(row.sureAmount).toLocaleString()}` 
+                      : `Take $${row.sureAmount.toLocaleString()} for sure`)
+                  : 'Invalid Option'}
               </motion.button>
             </div>
             
@@ -61,7 +63,7 @@ const CPTQuestionCard: React.FC<CPTQuestionCardProps> = ({ rows, selectedValues,
                     : 'bg-white border-slate-200 text-slate-700 hover:border-amber-300 hover:bg-amber-50/50'
                 }`}
               >
-                Take the gamble: {getLocalizedText(row.gamble, i18n.language || 'en')}
+                Take the gamble: {typeof row === 'object' && row.gamble != null ? getLocalizedText(row.gamble, i18n.language || 'en') : 'Invalid Option'}
               </motion.button>
             </div>
           </div>
