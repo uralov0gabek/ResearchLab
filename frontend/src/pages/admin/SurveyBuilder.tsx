@@ -60,7 +60,7 @@ const QuestionTypeDropdown = ({ value, onChange }: { value: QuestionType, onChan
       </button>
       
       {isOpen && (
-        <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg py-1 overflow-hidden">
+        <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg py-1 overflow-y-auto max-h-60 custom-scrollbar">
           {types.map(t => {
             const TIcon = t.icon;
             return (
@@ -170,6 +170,19 @@ const SurveyBuilder: React.FC = () => {
       title: '',
       options: ['Option 1'],
       required: false
+    };
+    setQuestions([...questions, newQ]);
+  };
+
+  const addCPTQuestion = () => {
+    if (!activeBlock) return;
+    const newQ: Question = {
+      id: crypto.randomUUID(),
+      block_name: activeBlock,
+      type: 'lottery',
+      title: 'Imagine the following gambles...',
+      options: [],
+      required: true
     };
     setQuestions([...questions, newQ]);
   };
@@ -805,13 +818,23 @@ const SurveyBuilder: React.FC = () => {
           ))}
 
           {activeBlock && (
-            <button 
-              onClick={addQuestion}
-              className="w-full py-6 border-2 border-dashed border-[#F4C542] bg-[#F4C542]/5 hover:bg-[#F4C542]/10 rounded-2xl text-[#c79a20] font-bold hover:text-[#a8821b] hover:border-[#d4a832] transition-all flex items-center justify-center gap-2 shadow-sm mt-4"
-            >
-              <Plus size={22} strokeWidth={2.5} />
-              Add New Question
-            </button>
+            <div className="flex flex-col sm:flex-row gap-4 mt-4">
+              <button 
+                onClick={addQuestion}
+                className="flex-1 py-4 border-2 border-dashed border-[#F4C542] bg-[#F4C542]/5 hover:bg-[#F4C542]/10 rounded-2xl text-[#c79a20] font-bold hover:text-[#a8821b] hover:border-[#d4a832] transition-all flex items-center justify-center gap-2 shadow-sm"
+              >
+                <Plus size={22} strokeWidth={2.5} />
+                Add New Question
+              </button>
+              
+              <button 
+                onClick={addCPTQuestion}
+                className="flex-1 py-4 border-2 border-dashed border-blue-400 bg-blue-50 hover:bg-blue-100 rounded-2xl text-blue-600 font-bold hover:text-blue-700 hover:border-blue-500 transition-all flex items-center justify-center gap-2 shadow-sm"
+              >
+                <Dices size={22} strokeWidth={2.5} />
+                Add CPT Task
+              </button>
+            </div>
           )}
         </div>
       </div>
