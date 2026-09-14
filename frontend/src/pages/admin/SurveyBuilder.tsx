@@ -174,18 +174,6 @@ const SurveyBuilder: React.FC = () => {
     setQuestions([...questions, newQ]);
   };
 
-  const addCPTQuestion = () => {
-    if (!activeBlock) return;
-    const newQ: Question = {
-      id: crypto.randomUUID(),
-      block_name: activeBlock,
-      type: 'lottery',
-      title: 'Imagine the following gambles...',
-      options: [],
-      required: true
-    };
-    setQuestions([...questions, newQ]);
-  };
 
   const updateQuestion = (id: string, updates: Partial<Question>) => {
     setQuestions(questions.map(q => q.id === id ? { ...q, ...updates } : q));
@@ -818,23 +806,13 @@ const SurveyBuilder: React.FC = () => {
           ))}
 
           {activeBlock && (
-            <div className="flex flex-col sm:flex-row gap-4 mt-4">
-              <button 
-                onClick={addQuestion}
-                className="flex-1 py-4 border-2 border-dashed border-[#F4C542] bg-[#F4C542]/5 hover:bg-[#F4C542]/10 rounded-2xl text-[#c79a20] font-bold hover:text-[#a8821b] hover:border-[#d4a832] transition-all flex items-center justify-center gap-2 shadow-sm"
-              >
-                <Plus size={22} strokeWidth={2.5} />
-                Add New Question
-              </button>
-              
-              <button 
-                onClick={addCPTQuestion}
-                className="flex-1 py-4 border-2 border-dashed border-blue-400 bg-blue-50 hover:bg-blue-100 rounded-2xl text-blue-600 font-bold hover:text-blue-700 hover:border-blue-500 transition-all flex items-center justify-center gap-2 shadow-sm"
-              >
-                <Dices size={22} strokeWidth={2.5} />
-                Add CPT Task
-              </button>
-            </div>
+            <button 
+              onClick={addQuestion}
+              className="w-full py-6 border-2 border-dashed border-[#F4C542] bg-[#F4C542]/5 hover:bg-[#F4C542]/10 rounded-2xl text-[#c79a20] font-bold hover:text-[#a8821b] hover:border-[#d4a832] transition-all flex items-center justify-center gap-2 shadow-sm mt-4"
+            >
+              <Plus size={22} strokeWidth={2.5} />
+              Add New Question
+            </button>
           )}
         </div>
       </div>
