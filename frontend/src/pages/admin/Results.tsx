@@ -71,7 +71,11 @@ const Results: React.FC = () => {
       let cohortKey = 'Students & Others';
       
       if (r1Q && answers[r1Q.id]) {
-        const role = answers[r1Q.id] as string;
+        // role may be an object (localized) or a string — normalize it safely
+        const rawRole = answers[r1Q.id];
+        const role = typeof rawRole === 'string' 
+          ? rawRole 
+          : (typeof rawRole === 'object' ? getLocalizedText(rawRole, 'en') : String(rawRole ?? ''));
         if (role.toLowerCase().includes('entrepreneur')) cohortKey = 'Founders';
         else if (role.toLowerCase().includes('investor') || role.toLowerCase().includes('venture capitalist')) cohortKey = 'Investors (VC)';
         else if (role.toLowerCase().includes('employee')) cohortKey = 'Employees/Workers';

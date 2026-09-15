@@ -88,7 +88,7 @@ const Responses: React.FC = () => {
   };
 
   const filteredResponses = responsesData.filter((row) => 
-    row.id.toLowerCase().includes(searchQuery.toLowerCase())
+    (row.id ?? '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const toggleRow = (id: string) => {
