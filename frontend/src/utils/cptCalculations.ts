@@ -151,7 +151,7 @@ export const processUserCPT = (answers: Record<string, unknown>, questions: any[
     const ans = getAnswer(q);
     if (!ans || !ans.rows || ans.rows.length === 0) return;
 
-    const firstGamble = ans.rows[0].gamble.toLowerCase();
+    const firstGamble = (ans.rows[0]?.gamble ?? '').toLowerCase();
     const hasWin = firstGamble.includes('win');
     const hasLose = firstGamble.includes('lose');
 
