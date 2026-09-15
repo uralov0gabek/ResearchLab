@@ -235,7 +235,16 @@ const SurveyBuilder: React.FC = () => {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      const questionsToUpsert = questions.map((q, index) => ({
+      let currentQuestions = [...questions];
+      if (editingBlock && editBlockName.trim() && editingBlock.trim() !== editBlockName.trim()) {
+        const trimmedOld = editingBlock.trim();
+        const trimmedNew = editBlockName.trim();
+        currentQuestions = currentQuestions.map(q => q.block_name.trim() === trimmedOld ? { ...q, block_name: trimmedNew } : q);
+        // We don't need to call setQuestions here because onBlur will eventually do it, 
+        // or fetchQuestions will just overwrite it with the correctly saved data.
+      }
+
+      const questionsToUpsert = currentQuestions.map((q, index) => ({
         id: q.id,
         block_name: q.block_name,
         question_text: q.title,
@@ -247,7 +256,7 @@ const SurveyBuilder: React.FC = () => {
       }));
 
       const dbQuestions = await apiFetch(`/questions`);
-      const currentIds = new Set(questions.map(q => q.id));
+      const currentIds = new Set(currentQuestions.map(q => q.id));
       const idsToDelete = dbQuestions?.filter((q: { id: string }) => !currentIds.has(q.id)).map((q: { id: string }) => q.id) || [];
 
       await apiFetch('/questions', {
