@@ -252,7 +252,7 @@ const SurveyBuilder: React.FC = () => {
         body: JSON.stringify({ questionsToUpsert, idsToDelete })
       });
 
-      sessionStorage.removeItem('survey_questions_cache'); // Clear frontend cache on save
+      sessionStorage.removeItem('survey_questions_cache_v3'); // Clear frontend cache on save
       setSaveMessage('Saved successfully!');
       setTimeout(() => setSaveMessage(null), 3000);
       fetchQuestions(); 
@@ -571,25 +571,28 @@ const SurveyBuilder: React.FC = () => {
                 <div className="pl-0 md:pl-2">
                   {(q.type === 'single_choice' || q.type === 'multiple_choice') && Array.isArray(q.options) && (
                     <div className="space-y-3">
-                      {q.options.map((opt: string, optIndex: number) => (
-                        <div key={optIndex} className="flex items-center gap-3 group/opt">
-                          <div className={`w-4 h-4 border-2 border-gray-300 ${q.type === 'single_choice' ? 'rounded-full' : 'rounded'} flex-shrink-0`} />
-                          <input
-                            type="text"
-                            value={opt}
-                            onChange={(e) => updateOption(q.id, optIndex, e.target.value)}
-                            placeholder={`Option ${optIndex + 1}`}
-                            className="flex-1 text-base border-b border-transparent focus:border-gray-300 hover:border-gray-200 focus:ring-0 py-1 bg-transparent transition-colors outline-none text-slate-700"
-                          />
-                          <button 
-                            onClick={() => removeOption(q.id, optIndex)}
-                            className="text-gray-300 hover:text-red-400 p-1 opacity-0 group-hover/opt:opacity-100 transition-opacity"
-                            disabled={q.options.length <= 1}
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      ))}
+                      {q.options.map((opt: any, optIndex: number) => {
+                        const optVal = typeof opt === 'string' ? opt : JSON.stringify(opt);
+                        return (
+                          <div key={optIndex} className="flex items-center gap-3 group/opt">
+                            <div className={`w-4 h-4 border-2 border-gray-300 ${q.type === 'single_choice' ? 'rounded-full' : 'rounded'} flex-shrink-0`} />
+                            <input
+                              type="text"
+                              value={optVal}
+                              onChange={(e) => updateOption(q.id, optIndex, e.target.value)}
+                              placeholder={`Option ${optIndex + 1}`}
+                              className="flex-1 text-base border-b border-transparent focus:border-gray-300 hover:border-gray-200 focus:ring-0 py-1 bg-transparent transition-colors outline-none text-slate-700"
+                            />
+                            <button 
+                              onClick={() => removeOption(q.id, optIndex)}
+                              className="text-gray-300 hover:text-red-400 p-1 opacity-0 group-hover/opt:opacity-100 transition-opacity"
+                              disabled={q.options.length <= 1}
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        );
+                      })}
                       <div className="pt-2">
                         <button 
                           onClick={() => addOption(q.id)}
@@ -658,29 +661,33 @@ const SurveyBuilder: React.FC = () => {
                         <div>
                           <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Statements (Rows)</label>
                           <div className="space-y-2">
-                            {(q.options?.rows || ['Statement 1']).map((r: string, rIdx: number) => (
-                              <div key={rIdx} className="flex items-center gap-2">
-                                <input
-                                  type="text"
-                                  value={r}
-                                  onChange={(e) => {
-                                    const newRows = [...(q.options?.rows || [])];
-                                    newRows[rIdx] = e.target.value;
-                                    updateQuestion(q.id, { options: { ...q.options, rows: newRows } });
-                                  }}
-                                  className="flex-1 rounded border border-gray-200 py-1.5 px-3 text-sm outline-none focus:border-[#F4C542]"
-                                />
-                                <button
-                                  onClick={() => {
-                                    const newRows = (q.options as {rows?: string[]})?.rows?.filter((_: unknown, i: number) => i !== rIdx) || [];
-                                    updateQuestion(q.id, { options: { ...q.options, rows: newRows } });
-                                  }}
-                                  className="text-gray-400 hover:text-red-500"
-                                >
-                                  <Trash2 size={14} />
-                                </button>
-                              </div>
-                            ))}
+                            {(q.options?.rows || ['Statement 1']).map((r: any, rIdx: number) => {
+                              const rVal = typeof r === 'string' ? r : JSON.stringify(r);
+                              return (
+                                <div key={rIdx} className="flex items-center gap-2">
+                                  <input
+                                    type="text"
+                                    value={rVal}
+                                    onChange={(e) => {
+                                      const newRows = [...(q.options?.rows || [])];
+                                      newRows[rIdx] = e.target.value;
+                                      updateQuestion(q.id, { options: { ...q.options, rows: newRows } });
+                                    }}
+                                    className="flex-1 text-sm border-b border-gray-200 focus:border-[#F4C542] hover:border-gray-300 py-1 bg-transparent transition-colors outline-none"
+                                    placeholder={`Statement ${rIdx + 1}`}
+                                  />
+                                  <button
+                                    onClick={() => {
+                                      const newRows = (q.options?.rows || []).filter((_: any, idx: number) => idx !== rIdx);
+                                      updateQuestion(q.id, { options: { ...q.options, rows: newRows } });
+                                    }}
+                                    className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                                  >
+                                    <Trash2 size={14} />
+                                  </button>
+                                </div>
+                              );
+                            })}
                             <button
                               onClick={() => {
                                 const newRows = [...(q.options?.rows || []), `Statement ${(q.options?.rows?.length || 1) + 1}`];
@@ -697,29 +704,32 @@ const SurveyBuilder: React.FC = () => {
                         <div>
                           <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Scale Points (Columns)</label>
                           <div className="space-y-2">
-                            {(q.options?.columns || ['Option 1']).map((c: string, cIdx: number) => (
-                              <div key={cIdx} className="flex items-center gap-2">
-                                <input
-                                  type="text"
-                                  value={c}
-                                  onChange={(e) => {
-                                    const newCols = [...(q.options?.columns || [])];
-                                    newCols[cIdx] = e.target.value;
-                                    updateQuestion(q.id, { options: { ...q.options, columns: newCols } });
-                                  }}
-                                  className="flex-1 rounded border border-gray-200 py-1.5 px-3 text-sm outline-none focus:border-[#F4C542]"
-                                />
-                                <button
-                                  onClick={() => {
-                                    const newCols = (q.options as {columns?: string[]})?.columns?.filter((_: unknown, i: number) => i !== cIdx) || [];
-                                    updateQuestion(q.id, { options: { ...q.options, columns: newCols } });
-                                  }}
-                                  className="text-gray-400 hover:text-red-500"
-                                >
-                                  <Trash2 size={14} />
-                                </button>
-                              </div>
-                            ))}
+                            {(q.options?.columns || ['Option 1']).map((c: any, cIdx: number) => {
+                              const cVal = typeof c === 'string' ? c : JSON.stringify(c);
+                              return (
+                                <div key={cIdx} className="flex items-center gap-2">
+                                  <input
+                                    type="text"
+                                    value={cVal}
+                                    onChange={(e) => {
+                                      const newCols = [...(q.options?.columns || [])];
+                                      newCols[cIdx] = e.target.value;
+                                      updateQuestion(q.id, { options: { ...q.options, columns: newCols } });
+                                    }}
+                                    className="flex-1 rounded border border-gray-200 py-1.5 px-3 text-sm outline-none focus:border-[#F4C542]"
+                                  />
+                                  <button
+                                    onClick={() => {
+                                      const newCols = (q.options?.columns || []).filter((_: any, i: number) => i !== cIdx);
+                                      updateQuestion(q.id, { options: { ...q.options, columns: newCols } });
+                                    }}
+                                    className="text-gray-400 hover:text-red-500"
+                                  >
+                                    <Trash2 size={14} />
+                                  </button>
+                                </div>
+                              );
+                            })}
                             <button
                               onClick={() => {
                                 const newCols = [...(q.options?.columns || []), `Option ${(q.options?.columns?.length || 1) + 1}`];
