@@ -46,8 +46,7 @@ const QuestionTypeDropdown = ({ value, onChange }: { value: QuestionType, onChan
 
   return (
     <div className="relative w-full md:w-56 shrink-0">
-      <button
-        type="button"
+      <button type="button" 
         onClick={() => setIsOpen(!isOpen)}
         onBlur={() => setTimeout(() => setIsOpen(false), 200)}
         className="w-full flex items-center justify-between rounded-xl border border-gray-200 bg-white py-2.5 pl-3 pr-3 text-sm outline-none shadow-sm font-medium text-slate-700 hover:border-[#F4C542] focus:border-[#F4C542] focus:ring-1 focus:ring-[#F4C542] transition-all"
@@ -64,9 +63,9 @@ const QuestionTypeDropdown = ({ value, onChange }: { value: QuestionType, onChan
           {types.map(t => {
             const TIcon = t.icon;
             return (
-              <button
+              <button type="button" 
                 key={t.value}
-                type="button"
+                
                 onMouseDown={(e) => { e.preventDefault(); onChange(t.value as QuestionType); setIsOpen(false); }}
                 className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left hover:bg-slate-50 transition-colors ${value === t.value ? 'bg-[#F4C542]/5 text-[#c79a20] font-semibold' : 'text-slate-700'}`}
               >
@@ -305,8 +304,14 @@ const SurveyBuilder: React.FC = () => {
                         onChange={(e) => setEditBlockName(e.target.value)}
                         onClick={(e) => e.stopPropagation()}
                         onKeyDown={(e) => {
-                          if (e.key === 'Enter') handleRenameBlock(block, editBlockName);
-                          else if (e.key === 'Escape') setEditingBlock(null);
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleRenameBlock(block, editBlockName);
+                          }
+                          else if (e.key === 'Escape') {
+                            e.preventDefault();
+                            setEditingBlock(null);
+                          }
                         }}
                         onBlur={() => handleRenameBlock(block, editBlockName)}
                         className="w-full text-sm font-semibold border-b border-gray-300 focus:border-[#F4C542] outline-none bg-transparent"
@@ -321,7 +326,7 @@ const SurveyBuilder: React.FC = () => {
                   </div>
                   
                   <div className={`absolute right-3 top-4 flex flex-col gap-1 transition-opacity ${activeBlock === block ? 'opacity-100' : 'opacity-0 md:group-hover:opacity-100'}`}>
-                    <button 
+                    <button type="button"  
                       onClick={(e) => {
                         e.stopPropagation();
                         setEditBlockName(block);
@@ -332,7 +337,7 @@ const SurveyBuilder: React.FC = () => {
                     >
                       <Edit2 size={14} />
                     </button>
-                    <button 
+                    <button type="button"  
                       onClick={(e) => handleDeleteBlock(block, e)}
                       className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
                       title="Delete Block"
@@ -344,7 +349,7 @@ const SurveyBuilder: React.FC = () => {
               </div>
             ))
           )}
-          <button 
+          <button type="button"  
             onClick={handleAddBlock} 
             className="w-full mt-4 py-3 border-2 border-dashed border-gray-200 rounded-xl text-gray-500 font-medium hover:border-[#F4C542] hover:text-[#c79a20] transition-colors flex items-center justify-center gap-2"
           >
@@ -371,7 +376,7 @@ const SurveyBuilder: React.FC = () => {
                 <CheckCircle size={16} /> {saveMessage}
               </span>
             )}
-            <button 
+            <button type="button" 
               onClick={handleSave}
               disabled={isSaving || isLoading}
               className={`flex items-center gap-2 px-6 py-2.5 rounded-lg transition-colors shadow-md font-medium shrink-0 ${
@@ -391,7 +396,7 @@ const SurveyBuilder: React.FC = () => {
               <span className="text-4xl mb-4">⚠️</span>
               <h3 className="text-xl font-semibold text-slate-700 mb-2">Connection Error</h3>
               <p className="text-slate-500 mb-6">{error}</p>
-              <button 
+              <button type="button"  
                 onClick={fetchQuestions}
                 className="px-6 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 font-medium transition-colors"
               >
@@ -428,14 +433,14 @@ const SurveyBuilder: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex items-center gap-1">
-                  <button 
+                  <button type="button"  
                     onClick={() => moveQuestion(index, 'up')}
                     disabled={index === 0}
                     className="p-1.5 text-gray-400 hover:text-slate-700 hover:bg-slate-100 rounded-md transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
                   >
                     <ArrowUp size={16} />
                   </button>
-                  <button 
+                  <button type="button"  
                     onClick={() => moveQuestion(index, 'down')}
                     disabled={index === activeBlockQuestions.length - 1}
                     className="p-1.5 text-gray-400 hover:text-slate-700 hover:bg-slate-100 rounded-md transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
@@ -443,7 +448,7 @@ const SurveyBuilder: React.FC = () => {
                     <ArrowDown size={16} />
                   </button>
                   <div className="w-px h-4 bg-gray-300 mx-1"></div>
-                  <button 
+                  <button type="button"  
                     onClick={() => removeQuestion(q.id)}
                     className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
                   >
@@ -556,7 +561,7 @@ const SurveyBuilder: React.FC = () => {
                               className="w-full sm:flex-1 rounded border border-gray-200 text-sm focus:border-[#F4C542] focus:ring-[#F4C542] bg-slate-50 py-2 sm:py-1.5 px-3 sm:px-2 outline-none sm:min-w-[150px]"
                             />
                             <div className="flex justify-end mt-1 sm:mt-0">
-                              <button 
+                              <button type="button"  
                                 onClick={() => removeRule(rIdx)}
                                 className="p-2 sm:p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
                               >
@@ -567,7 +572,7 @@ const SurveyBuilder: React.FC = () => {
                         ))}
                         
                         <div className="pt-2">
-                          <button 
+                          <button type="button"  
                             onClick={addRule}
                             className="inline-flex items-center justify-center w-full sm:w-auto gap-1.5 text-sm text-[#F4C542] hover:text-[#d4a832] font-semibold transition-colors bg-white border border-[#F4C542]/20 rounded-lg px-3 py-2 sm:py-1.5 hover:bg-[#F4C542]/5"
                           >
@@ -595,7 +600,7 @@ const SurveyBuilder: React.FC = () => {
                               placeholder={`Option ${optIndex + 1}`}
                               className="flex-1 text-base border-b border-transparent focus:border-gray-300 hover:border-gray-200 focus:ring-0 py-1 bg-transparent transition-colors outline-none text-slate-700"
                             />
-                            <button 
+                            <button type="button"  
                               onClick={() => removeOption(q.id, optIndex)}
                               className="text-gray-300 hover:text-red-400 p-1 opacity-0 group-hover/opt:opacity-100 transition-opacity"
                               disabled={q.options.length <= 1}
@@ -606,7 +611,7 @@ const SurveyBuilder: React.FC = () => {
                         );
                       })}
                       <div className="pt-2">
-                        <button 
+                        <button type="button"  
                           onClick={() => addOption(q.id)}
                           className="inline-flex items-center gap-2 text-sm text-[#d4a832] hover:text-[#b38d2a] font-semibold p-1 transition-colors"
                         >
@@ -688,7 +693,7 @@ const SurveyBuilder: React.FC = () => {
                                     className="flex-1 text-sm border-b border-gray-200 focus:border-[#F4C542] hover:border-gray-300 py-1 bg-transparent transition-colors outline-none"
                                     placeholder={`Statement ${rIdx + 1}`}
                                   />
-                                  <button
+                                  <button type="button" 
                                     onClick={() => {
                                       const newRows = (q.options?.rows || []).filter((_: any, idx: number) => idx !== rIdx);
                                       updateQuestion(q.id, { options: { ...q.options, rows: newRows } });
@@ -700,7 +705,7 @@ const SurveyBuilder: React.FC = () => {
                                 </div>
                               );
                             })}
-                            <button
+                            <button type="button" 
                               onClick={() => {
                                 const newRows = [...(q.options?.rows || []), `Statement ${(q.options?.rows?.length || 1) + 1}`];
                                 updateQuestion(q.id, { options: { ...q.options, rows: newRows } });
@@ -730,7 +735,7 @@ const SurveyBuilder: React.FC = () => {
                                     }}
                                     className="flex-1 rounded border border-gray-200 py-1.5 px-3 text-sm outline-none focus:border-[#F4C542]"
                                   />
-                                  <button
+                                  <button type="button" 
                                     onClick={() => {
                                       const newCols = (q.options?.columns || []).filter((_: any, i: number) => i !== cIdx);
                                       updateQuestion(q.id, { options: { ...q.options, columns: newCols } });
@@ -742,7 +747,7 @@ const SurveyBuilder: React.FC = () => {
                                 </div>
                               );
                             })}
-                            <button
+                            <button type="button" 
                               onClick={() => {
                                 const newCols = [...(q.options?.columns || []), `Option ${(q.options?.columns?.length || 1) + 1}`];
                                 updateQuestion(q.id, { options: { ...q.options, columns: newCols } });
@@ -764,7 +769,7 @@ const SurveyBuilder: React.FC = () => {
                           <LayoutGrid className="text-[#F4C542]" size={20} />
                           <h4 className="font-semibold text-slate-800">Select CPT Tasks</h4>
                         </div>
-                        <button
+                        <button type="button" 
                           onClick={() => {
                             const allFormatted = cptTasksList.map((t: any) => ({
                               id: t.id,
@@ -828,7 +833,7 @@ const SurveyBuilder: React.FC = () => {
           ))}
 
           {activeBlock && (
-            <button 
+            <button type="button"  
               onClick={addQuestion}
               className="w-full py-6 border-2 border-dashed border-[#F4C542] bg-[#F4C542]/5 hover:bg-[#F4C542]/10 rounded-2xl text-[#c79a20] font-bold hover:text-[#a8821b] hover:border-[#d4a832] transition-all flex items-center justify-center gap-2 shadow-sm mt-4"
             >
@@ -860,13 +865,13 @@ const SurveyBuilder: React.FC = () => {
               }}
             />
             <div className="flex justify-end gap-3">
-              <button
+              <button type="button" 
                 onClick={() => setShowAddBlockModal(false)}
                 className="px-5 py-2.5 rounded-xl font-medium text-slate-600 hover:bg-slate-100 transition-colors"
               >
                 Cancel
               </button>
-              <button
+              <button type="button" 
                 onClick={() => {
                   if (newBlockName.trim()) {
                     setActiveBlock(newBlockName.trim());
