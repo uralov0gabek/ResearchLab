@@ -129,7 +129,7 @@ export interface CPTSummary {
 }
 
 
-export const processUserCPT = (answers: Record<string, unknown>, questions: any[]): CPTSummary => {
+export const processUserCPT = (answers: Record<string, unknown>, questions: any[], cptTasks?: any[]): CPTSummary => {
   const getAnswer = (q?: any) => {
     if (!q) return null;
     const ans = answers[q.id];
@@ -149,34 +149,78 @@ export const processUserCPT = (answers: Record<string, unknown>, questions: any[
   questions.forEach(q => {
     if (q.type !== 'lottery' && q.type !== 'CPT') return;
     const ans = getAnswer(q);
-    if (!ans || !ans.rows || ans.rows.length === 0) return;
+    if (!ans || !ans.selectedValues) return;
 
-    const firstGamble = (ans.rows[0]?.gamble ?? '').toLowerCase();
-    const hasWin = firstGamble.includes('win');
-    const hasLose = firstGamble.includes('lose');
+    // Build rows from saved rows or from cptTasks lookup
+    let rows: { sureAmount: number; gamble: string; block?: string }[] = [];
 
-    if (hasWin && !hasLose) {
-      const match = firstGamble.match(/win \$?([\d,]+)\s*(?:uzs|usd)?/i);
-      if (match) {
-        const X = parseInt(match[1].replace(/,/g, ''), 10);
-        const ce = calculateCE(ans);
-        const a = calculateAlpha(ce, X);
-        if (a) alphas.push(a);
+    if (ans.rows && Array.isArray(ans.rows) && ans.rows.length > 0 && typeof ans.rows[0] === 'object' && ans.rows[0]?.sureAmount != null) {
+      // Rows already in correct format
+      rows = ans.rows;
+    } else if (cptTasks && cptTasks.length > 0 && ans.rows && Array.isArray(ans.rows)) {
+      // rows are task IDs or "Option N" strings — look up from cptTasks
+      // Try to match by index using the question's options (which contain {id, sureAmount, gamble})
+      const qOptions = q.options;
+      if (Array.isArray(qOptions) && qOptions.length > 0 && typeof qOptions[0] === 'object' && qOptions[0]?.id) {
+        rows = qOptions.map((opt: any) => {
+          const task = cptTasks.find((t: any) => t.id === opt.id);
+          if (task) {
+            return {
+              sureAmount: task.sure_amount,
+              gamble: `${task.gamble_a_prob}% chance to win ${task.gamble_a_amount} or ${task.gamble_b_prob}% chance to win ${task.gamble_b_amount}`,
+              block: task.block
+            };
+          }
+          return opt;
+        }).filter((r: any) => r?.sureAmount != null);
       }
-    } else if (hasLose && !hasWin) {
-      const match = firstGamble.match(/lose \$?([\d,]+)\s*(?:uzs|usd)?/i);
-      if (match) {
-        const L = parseInt(match[1].replace(/,/g, ''), 10);
-        const ce = calculateCE(ans, true);
-        const b = calculateBeta(ce, L);
-        if (b) betas.push(b);
-      }
-    } else if (hasWin && hasLose) {
-      const match = firstGamble.match(/lose \$?([\d,]+)\s*(?:uzs|usd)?/i);
-      if (match) {
-        const L = parseInt(match[1].replace(/,/g, ''), 10);
-        mixedTasks.push({ ans, L });
-      }
+    }
+
+    if (rows.length === 0) return;
+
+    // Determine block type from rows[0].block or gamble string
+    const firstRow = rows[0] as any;
+    const blockType = firstRow?.block ?? '';
+    const firstGamble = (firstRow?.gamble ?? '').toLowerCase();
+    
+    let hasWin = blockType === 'gain' || firstGamble.includes('win');
+    let hasLose = blockType === 'loss' || blockType === 'mixed' || firstGamble.includes('lose');
+    const isMixed = blockType === 'mixed' || (hasWin && hasLose);
+
+    // Reconstruct a proper LotteryResponse with rows
+    const lotteryRes: LotteryResponse = { ...ans, rows };
+
+    if (hasWin && !isMixed) {
+      // Gain block: calculate alpha using max gamble amount as X
+      const firstTask = cptTasks?.find((t: any) => {
+        const opt = Array.isArray(q.options) ? q.options[0] : null;
+        return opt && t.id === opt.id;
+      });
+      const gambleX = firstTask ? Math.abs(firstTask.gamble_a_amount) : 
+        parseInt((firstGamble.match(/win\s+\$?([\d,]+)/i) || [])[1]?.replace(/,/g,'') || '0');
+      const ce = calculateCE(lotteryRes, false);
+      const a = gambleX > 0 ? calculateAlpha(ce, gambleX) : null;
+      if (a) alphas.push(a);
+    } else if (hasLose && !isMixed) {
+      // Loss block: calculate beta
+      const firstTask = cptTasks?.find((t: any) => {
+        const opt = Array.isArray(q.options) ? q.options[0] : null;
+        return opt && t.id === opt.id;
+      });
+      const gambleL = firstTask ? Math.abs(firstTask.gamble_a_amount) :
+        parseInt((firstGamble.match(/lose\s+\$?([\d,]+)/i) || [])[1]?.replace(/,/g,'') || '0');
+      const ce = calculateCE(lotteryRes, true);
+      const b = gambleL > 0 ? calculateBeta(ce, gambleL) : null;
+      if (b) betas.push(b);
+    } else if (isMixed) {
+      // Mixed block: for lambda calculation
+      const firstTask = cptTasks?.find((t: any) => {
+        const opt = Array.isArray(q.options) ? q.options[0] : null;
+        return opt && t.id === opt.id;
+      });
+      const L = firstTask ? Math.abs(firstTask.gamble_b_amount) :
+        parseInt((firstGamble.match(/lose\s+\$?([\d,]+)/i) || [])[1]?.replace(/,/g,'') || '0');
+      if (L > 0) mixedTasks.push({ ans: lotteryRes, L });
     }
   });
 

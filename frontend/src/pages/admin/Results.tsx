@@ -16,17 +16,20 @@ const Results: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [responses, setResponses] = useState<any[]>([]);
+  const [cptTasks, setCptTasks] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setIsLoading(true);
-        const [qData, rData] = await Promise.all([
+              const [qData, rData, cData] = await Promise.all([
           apiFetch('/questions').catch(() => []),
-          apiFetch('/responses').catch(() => [])
+          apiFetch('/responses').catch(() => []),
+          apiFetch('/cpt-tasks').catch(() => [])
         ]);
         setQuestions(qData);
         setResponses(Array.isArray(rData) ? rData : (rData.responses || []));
+        setCptTasks(Array.isArray(cData) ? cData : []);
       } catch (err) {
         console.error('Failed to fetch data', err);
       } finally {
@@ -59,7 +62,7 @@ const Results: React.FC = () => {
 
     responses.forEach(res => {
       const answers = res.answers || {};
-      const cpt = processUserCPT(answers, questions);
+      const cpt = processUserCPT(answers, questions, cptTasks);
       
       // Determine cohort based on the activity question
       const r1Q = questions.find(q => {

@@ -45,18 +45,21 @@ const Responses: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [responsesData, setResponsesData] = useState<ProcessedResponse[]>([]);
   const [questions, setQuestions] = useState<any[]>([]);
+  const [cptTasks, setCptTasks] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [data, qData] = await Promise.all([
+      const [data, qData, cData] = await Promise.all([
         apiFetch('/responses'),
-        apiFetch('/questions').catch(() => [])
+        apiFetch('/questions').catch(() => []),
+        apiFetch('/cpt-tasks').catch(() => [])
       ]);
       setResponsesData(data.responses || []);
       setQuestions(qData || []);
+      setCptTasks(Array.isArray(cData) ? cData : []);
     } catch (err) {
       console.error('Error fetching responses data:', err);
       setResponsesData([]);
@@ -75,7 +78,7 @@ const Responses: React.FC = () => {
     const csvContent = "data:text/csv;charset=utf-8," 
       + headers.join(",") + "\n"
       + responsesData.map(r => {
-          const cpt = processUserCPT(r.answers || {}, questions);
+          const cpt = processUserCPT(r.answers || {}, questions, cptTasks);
           return `${r.id},${r.user_id || 'Anonymous'},${r.date},${formatParam(cpt.alpha)},${formatParam(cpt.beta)},${formatParam(cpt.lambda)}`;
         }).join("\n");
     const encodedUri = encodeURI(csvContent);
@@ -187,9 +190,9 @@ const Responses: React.FC = () => {
                       {row.user_id || 'Anonymous'}
                     </td>
                     <td className="px-6 py-4 text-sm text-slate-700 font-medium">{row.date}</td>
-                    <td className="px-6 py-4 text-sm text-slate-700">{formatParam(processUserCPT(row.answers || {}, questions).alpha)}</td>
-                    <td className="px-6 py-4 text-sm text-slate-700">{formatParam(processUserCPT(row.answers || {}, questions).beta)}</td>
-                    <td className="px-6 py-4 text-sm text-slate-700">{formatParam(processUserCPT(row.answers || {}, questions).lambda)}</td>
+                    <td className="px-6 py-4 text-sm text-slate-700">{formatParam(processUserCPT(row.answers || {}, questions, cptTasks).alpha)}</td>
+                    <td className="px-6 py-4 text-sm text-slate-700">{formatParam(processUserCPT(row.answers || {}, questions, cptTasks).beta)}</td>
+                    <td className="px-6 py-4 text-sm text-slate-700">{formatParam(processUserCPT(row.answers || {}, questions, cptTasks).lambda)}</td>
                     <td className="px-6 py-4 text-sm text-right">
                       <button
                         onClick={(e) => handleDelete(row.id, e)}
