@@ -116,11 +116,12 @@ const SurveyBuilder: React.FC = () => {
         }));
         setQuestions(loadedQuestions);
         
-        // Extract unique blocks
+        // Extract unique blocks — only set activeBlock on first load
         const blocks = Array.from(new Set(loadedQuestions.map((q: Question) => q.block_name)));
-        if (blocks.length > 0 && !activeBlock) {
-          setActiveBlock(blocks[0] as string);
-        }
+        setActiveBlock(prev => {
+          if (!prev && blocks.length > 0) return blocks[0] as string;
+          return prev;
+        });
       }
       setError(null);
     } catch (err: any) {
@@ -129,7 +130,8 @@ const SurveyBuilder: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [activeBlock]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // No activeBlock dep — avoids re-fetch loop on rename
 
   useEffect(() => {
     fetchQuestions();
@@ -142,7 +144,7 @@ const SurveyBuilder: React.FC = () => {
     setShowAddBlockModal(true);
   };
 
-  const handleRenameBlock = (oldName: string, newName: string) => {
+  const handleRenameBlock = async (oldName: string, newName: string) => {
     const trimmedNew = newName.trim();
     const trimmedOld = oldName.trim();
     
@@ -150,9 +152,35 @@ const SurveyBuilder: React.FC = () => {
       setEditingBlock(null);
       return;
     }
-    setQuestions(prev => prev.map(q => q.block_name.trim() === trimmedOld ? { ...q, block_name: trimmedNew } : q));
+
+    // 1. Update local state immediately for snappy UX
+    const updatedQuestions = questions.map(q =>
+      q.block_name.trim() === trimmedOld ? { ...q, block_name: trimmedNew } : q
+    );
+    setQuestions(updatedQuestions);
     setActiveBlock(prev => prev?.trim() === trimmedOld ? trimmedNew : prev);
     setEditingBlock(null);
+
+    // 2. Immediately persist to DB so all devices see the new name
+    try {
+      const questionsToUpsert = updatedQuestions.map((q, index) => ({
+        id: q.id,
+        block_name: q.block_name,
+        question_text: q.title,
+        type: q.type,
+        options: q.options,
+        order_index: index,
+        required: q.required,
+        conditional_logic: q.dependsOn
+      }));
+      await apiFetch('/questions', {
+        method: 'POST',
+        body: JSON.stringify({ questionsToUpsert, idsToDelete: [] })
+      });
+      sessionStorage.removeItem('survey_questions_cache_v3');
+    } catch (err) {
+      console.error('Failed to save renamed block:', err);
+    }
   };
 
   const handleDeleteBlock = (blockName: string, e: React.MouseEvent) => {
@@ -266,7 +294,7 @@ const SurveyBuilder: React.FC = () => {
       sessionStorage.removeItem('survey_questions_cache_v3'); // Clear frontend cache on save
       setSaveMessage('Saved successfully!');
       setTimeout(() => setSaveMessage(null), 3000);
-      fetchQuestions(); 
+      // Don't call fetchQuestions() here — it would override local state with old DB data
     } catch (error) {
       console.error('Save Error:', error);
       setSaveMessage('Failed to save questions.');
