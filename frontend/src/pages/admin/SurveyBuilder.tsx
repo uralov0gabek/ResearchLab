@@ -144,20 +144,23 @@ const SurveyBuilder: React.FC = () => {
   };
 
   const handleRenameBlock = (oldName: string, newName: string) => {
-    if (!newName.trim() || oldName === newName) {
+    const trimmedNew = newName.trim();
+    const trimmedOld = oldName.trim();
+    
+    if (!trimmedNew || trimmedOld === trimmedNew) {
       setEditingBlock(null);
       return;
     }
-    setQuestions(questions.map(q => q.block_name === oldName ? { ...q, block_name: newName } : q));
-    if (activeBlock === oldName) setActiveBlock(newName);
+    setQuestions(prev => prev.map(q => q.block_name.trim() === trimmedOld ? { ...q, block_name: trimmedNew } : q));
+    setActiveBlock(prev => prev?.trim() === trimmedOld ? trimmedNew : prev);
     setEditingBlock(null);
   };
 
   const handleDeleteBlock = (blockName: string, e: React.MouseEvent) => {
     e.stopPropagation();
     if (window.confirm(`Are you sure you want to delete the block "${blockName}" and ALL its questions?`)) {
-      setQuestions(questions.filter(q => q.block_name !== blockName));
-      if (activeBlock === blockName) setActiveBlock(null);
+      setQuestions(prev => prev.filter(q => q.block_name !== blockName));
+      setActiveBlock(prev => prev === blockName ? null : prev);
     }
   };
 
