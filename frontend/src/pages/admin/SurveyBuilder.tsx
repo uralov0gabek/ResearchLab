@@ -308,7 +308,7 @@ const SurveyBuilder: React.FC = () => {
                     </p>
                   </div>
                   
-                  <div className="absolute right-3 top-4 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className={`absolute right-3 top-4 flex flex-col gap-1 transition-opacity ${activeBlock === block ? 'opacity-100' : 'opacity-0 md:group-hover:opacity-100'}`}>
                     <button 
                       onClick={(e) => {
                         e.stopPropagation();
