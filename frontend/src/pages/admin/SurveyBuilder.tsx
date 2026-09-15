@@ -177,7 +177,7 @@ const SurveyBuilder: React.FC = () => {
         method: 'POST',
         body: JSON.stringify({ questionsToUpsert, idsToDelete: [] })
       });
-      sessionStorage.removeItem('survey_questions_cache_v3');
+      sessionStorage.removeItem('survey_questions_cache_v4');
     } catch (err) {
       console.error('Failed to save renamed block:', err);
     }
@@ -291,7 +291,7 @@ const SurveyBuilder: React.FC = () => {
         body: JSON.stringify({ questionsToUpsert, idsToDelete })
       });
 
-      sessionStorage.removeItem('survey_questions_cache_v3'); // Clear frontend cache on save
+      sessionStorage.removeItem('survey_questions_cache_v4'); // Clear frontend cache on save
       setSaveMessage('Saved successfully!');
       setTimeout(() => setSaveMessage(null), 3000);
       // Don't call fetchQuestions() here — it would override local state with old DB data
