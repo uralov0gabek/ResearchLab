@@ -9,7 +9,7 @@ import { SurveyLoader } from '../components/survey/SurveyLoader';
 import { SurveyCompletion } from '../components/survey/SurveyCompletion';
 import { QuestionRenderer } from '../components/survey/QuestionRenderer';
 import { getLocalizedText } from '../utils/localization';
-import type { LotteryRow, LotteryResponse } from '../types';
+import type { LotteryResponse } from '../types';
 
 const PublicSurvey: React.FC = () => {
   const { t, i18n } = useTranslation();
@@ -50,10 +50,11 @@ const PublicSurvey: React.FC = () => {
       // If it's a lottery, and they started answering it, it must be complete
       if (q.type === 'lottery') {
         const ans = answers[q.id];
-        if (ans && typeof ans === 'object' && !Array.isArray(ans) && (ans as LotteryResponse).choices && (ans as LotteryResponse).choices.length > 0) {
-          const rows = q.options as LotteryRow[];
+        if (ans && typeof ans === 'object' && !Array.isArray(ans) && (ans as LotteryResponse).choices) {
+          const validRows = (q.options as any[]).filter((row: any) => typeof row === 'object' && row.sureAmount != null);
           const lotteryAnswer = ans as LotteryResponse;
-          return rows.length > 0 && lotteryAnswer.choices.length === rows.length && lotteryAnswer.choices.every((c: any) => c === 'A' || c === 'B');
+          const selectedCount = Object.values(lotteryAnswer.selectedValues || {}).filter(v => v === 'A' || v === 'B').length;
+          return validRows.length > 0 && selectedCount === validRows.length;
         }
       }
       return true; 
@@ -67,10 +68,12 @@ const PublicSurvey: React.FC = () => {
     } else if (q.type === 'multiple_choice') {
       return Array.isArray(answer) && answer.length > 0;
     } else if (q.type === 'lottery') {
-      if (answer && typeof answer === 'object' && !Array.isArray(answer) && (answer as LotteryResponse).type === 'lottery_response' && (answer as LotteryResponse).choices) {
-        const rows = q.options as LotteryRow[];
+      if (answer && typeof answer === 'object' && !Array.isArray(answer)) {
         const lotteryAnswer = answer as LotteryResponse;
-        return rows.length > 0 && lotteryAnswer.choices.length === rows.length && lotteryAnswer.choices.every((c: any) => c === 'A' || c === 'B');
+        const validRows = (q.options as any[]).filter((row: any) => typeof row === 'object' && row.sureAmount != null);
+        // Use selectedValues to count answered rows (more reliable than choices array)
+        const selectedCount = Object.values(lotteryAnswer.selectedValues || {}).filter(v => v === 'A' || v === 'B').length;
+        return validRows.length > 0 && selectedCount === validRows.length;
       }
       return false;
     } else if (q.type === 'slider') {
