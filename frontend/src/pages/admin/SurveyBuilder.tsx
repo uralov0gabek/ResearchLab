@@ -816,41 +816,56 @@ const SurveyBuilder: React.FC = () => {
                         {cptTasksList.length === 0 ? (
                           <p className="text-sm text-slate-500 text-center py-4">No CPT tasks found in database. Create them in CPT Builder.</p>
                         ) : (
-                          cptTasksList.map((task: any) => {
-                            const currentOptions = Array.isArray(q.options) ? q.options : [];
-                            const isSelected = currentOptions.some((opt: any) => opt.id === task.id);
-                            
-                            return (
-                              <label key={task.id} className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${isSelected ? 'bg-blue-50/50 border-blue-200' : 'bg-white border-slate-100 hover:border-blue-100'}`}>
-                                <div className="pt-0.5">
-                                  <input 
-                                    type="checkbox" 
-                                    checked={isSelected}
-                                    onChange={(e) => {
-                                      let newOptions = [...currentOptions];
-                                      if (e.target.checked) {
-                                        newOptions.push({
-                                          id: task.id,
-                                          sureAmount: task.sure_amount,
-                                          gamble: `${task.gamble_a_prob}% chance to win ${task.gamble_a_amount} or ${task.gamble_b_prob}% chance to win ${task.gamble_b_amount}`
-                                        });
-                                      } else {
-                                        newOptions = newOptions.filter((opt: any) => opt.id !== task.id);
-                                      }
-                                      updateQuestion(q.id, { options: newOptions });
-                                    }}
-                                    className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                  />
-                                </div>
-                                <div>
-                                  <div className="font-medium text-sm text-slate-800">{task.title}</div>
-                                  <div className="text-xs text-slate-500 mt-1">
-                                    Sure: ${task.sure_amount} | Gamble: ${task.gamble_a_prob}% ${task.gamble_a_amount} / ${task.gamble_b_prob}% ${task.gamble_b_amount}
-                                  </div>
-                                </div>
-                              </label>
-                            );
-                          })
+                          Object.entries(
+                            cptTasksList.reduce((acc: any, task: any) => {
+                              const groupMatch = task.title.match(/^[a-zA-Z]+[0-9]+/);
+                              const group = groupMatch ? groupMatch[0] : 'Other';
+                              if (!acc[group]) acc[group] = [];
+                              acc[group].push(task);
+                              return acc;
+                            }, {})
+                          ).map(([groupName, groupTasks]: [string, any]) => (
+                            <div key={groupName} className="mb-4 last:mb-0">
+                              <h5 className="text-sm font-semibold text-slate-700 mb-2 border-b border-slate-100 pb-1">{groupName} Group</h5>
+                              <div className="space-y-2">
+                                {groupTasks.map((task: any) => {
+                                  const currentOptions = Array.isArray(q.options) ? q.options : [];
+                                  const isSelected = currentOptions.some((opt: any) => opt.id === task.id);
+                                  
+                                  return (
+                                    <label key={task.id} className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${isSelected ? 'bg-blue-50/50 border-blue-200' : 'bg-white border-slate-100 hover:border-blue-100'}`}>
+                                      <div className="pt-0.5">
+                                        <input 
+                                          type="checkbox" 
+                                          checked={isSelected}
+                                          onChange={(e) => {
+                                            let newOptions = [...currentOptions];
+                                            if (e.target.checked) {
+                                              newOptions.push({
+                                                id: task.id,
+                                                sureAmount: task.sure_amount,
+                                                gamble: `${task.gamble_a_prob}% chance to win ${task.gamble_a_amount} or ${task.gamble_b_prob}% chance to win ${task.gamble_b_amount}`
+                                              });
+                                            } else {
+                                              newOptions = newOptions.filter((opt: any) => opt.id !== task.id);
+                                            }
+                                            updateQuestion(q.id, { options: newOptions });
+                                          }}
+                                          className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                        />
+                                      </div>
+                                      <div>
+                                        <div className="font-medium text-sm text-slate-800">{task.title}</div>
+                                        <div className="text-xs text-slate-500 mt-1">
+                                          Sure: ${task.sure_amount} | Gamble: ${task.gamble_a_prob}% ${task.gamble_a_amount} / ${task.gamble_b_prob}% ${task.gamble_b_amount}
+                                        </div>
+                                      </div>
+                                    </label>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          ))
                         )}
                       </div>
                     </div>
