@@ -1,9 +1,10 @@
 export type QuestionType = 'short_text' | 'single_choice' | 'multiple_choice' | 'number_input' | 'lottery' | 'matrix' | 'slider';
 
 export interface LotteryRow {
-  id?: number;
+  id?: string;
   sureAmount: number;
   gamble: string;
+  title?: string;
 }
 
 export interface QuestionCondition {

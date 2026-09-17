@@ -801,6 +801,7 @@ const SurveyBuilder: React.FC = () => {
                           onClick={() => {
                             const allFormatted = cptTasksList.map((t: any) => ({
                               id: t.id,
+                              title: t.title,
                               sureAmount: t.sure_amount,
                               gamble: `${t.gamble_a_prob}% chance to win ${t.gamble_a_amount} or ${t.gamble_b_prob}% chance to win ${t.gamble_b_amount}`
                             }));
@@ -843,6 +844,7 @@ const SurveyBuilder: React.FC = () => {
                                             if (e.target.checked) {
                                               newOptions.push({
                                                 id: task.id,
+                                                title: task.title,
                                                 sureAmount: task.sure_amount,
                                                 gamble: `${task.gamble_a_prob}% chance to win ${task.gamble_a_amount} or ${task.gamble_b_prob}% chance to win ${task.gamble_b_amount}`
                                               });
