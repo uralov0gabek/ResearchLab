@@ -14,7 +14,7 @@ interface ProcessedResponse {
   answers?: Record<string, any>;
 }
 
-const formatAnswerForAdmin = (ans: any): string => {
+const formatAnswerForAdmin = (ans: any, q?: any): string => {
   let parsed = ans;
   if (typeof ans === 'string') {
     try {
@@ -27,8 +27,21 @@ const formatAnswerForAdmin = (ans: any): string => {
   if (typeof parsed === 'object' && parsed !== null) {
     if (parsed.type === 'lottery_response' && Array.isArray(parsed.choices)) {
       return parsed.choices
-        .map((c: string, i: number) => `Choice ${i + 1}: ${c || 'Not selected'}`)
-        .join('\n');
+        .map((c: string, i: number) => {
+          const row = parsed.rows?.[i] || q?.options?.[i];
+          const choiceStr = c || parsed.selectedValues?.[i] || 'Not selected';
+          if (row && typeof row === 'object' && row.sureAmount != null) {
+            const sureText = typeof row.sureAmount === 'number' 
+              ? (row.sureAmount < 0 ? `-$${Math.abs(row.sureAmount).toLocaleString()}` : `$${row.sureAmount.toLocaleString()}`) 
+              : String(row.sureAmount);
+            const gambleText = typeof row.gamble === 'string' ? row.gamble : String(row.gamble);
+            const titlePrefix = row.title ? `[${row.title}] ` : '';
+            const selectedText = choiceStr === 'A' ? `Sure (${sureText})` : (choiceStr === 'B' ? `Gamble (${gambleText})` : choiceStr);
+            return `${titlePrefix}Sure: ${sureText} OR Gamble: ${gambleText}\n  => Selected: ${selectedText}`;
+          }
+          return `Choice ${i + 1}: ${choiceStr}`;
+        })
+        .join('\n\n');
     }
     if (Array.isArray(parsed)) {
       return parsed.join(', ');
@@ -222,7 +235,7 @@ const Responses: React.FC = () => {
                                   <div key={qId} className="text-sm border-b border-slate-100 pb-3 last:border-0 last:pb-0">
                                     <div className="text-slate-500 mb-1 font-medium break-words whitespace-normal">{questionTitle}</div>
                                     <div className="text-slate-900 bg-slate-50 px-3 py-2 rounded-lg inline-block max-w-full break-words whitespace-pre-wrap">
-                                      {formatAnswerForAdmin(ans)}
+                                      {formatAnswerForAdmin(ans, q)}
                                     </div>
                                   </div>
                                 );
