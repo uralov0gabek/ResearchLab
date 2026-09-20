@@ -14,7 +14,7 @@ interface ProcessedResponse {
   answers?: Record<string, any>;
 }
 
-const formatAnswerForAdmin = (ans: any, q?: any): string => {
+const formatAnswerForAdmin = (ans: any, q?: any): React.ReactNode => {
   let parsed = ans;
   if (typeof ans === 'string') {
     try {
@@ -26,32 +26,62 @@ const formatAnswerForAdmin = (ans: any, q?: any): string => {
 
   if (typeof parsed === 'object' && parsed !== null) {
     if (parsed.type === 'lottery_response' && Array.isArray(parsed.choices)) {
-      return parsed.choices
-        .map((c: string, i: number) => {
-          const row = parsed.rows?.[i] || q?.options?.[i];
-          const choiceStr = c || parsed.selectedValues?.[i] || 'Not selected';
-          if (row && typeof row === 'object' && row.sureAmount != null) {
-            const sureText = typeof row.sureAmount === 'number' 
-              ? (row.sureAmount < 0 ? `-$${Math.abs(row.sureAmount).toLocaleString()}` : `$${row.sureAmount.toLocaleString()}`) 
-              : String(row.sureAmount);
-            const gambleText = typeof row.gamble === 'string' ? row.gamble : String(row.gamble);
-            const titlePrefix = row.title ? `[${row.title}] ` : '';
-            const selectedText = choiceStr === 'A' ? `Sure (${sureText})` : (choiceStr === 'B' ? `Gamble (${gambleText})` : choiceStr);
-            return `${titlePrefix}Sure: ${sureText} OR Gamble: ${gambleText}\n  => Selected: ${selectedText}`;
-          }
-          return `Choice ${i + 1}: ${choiceStr}`;
-        })
-        .join('\n\n');
+      return (
+        <div className="flex flex-col gap-3 w-full mt-2">
+          {parsed.choices.map((c: string, i: number) => {
+            const row = parsed.rows?.[i] || q?.options?.[i];
+            const choiceStr = c || parsed.selectedValues?.[i] || 'Not selected';
+            
+            if (row && typeof row === 'object' && row.sureAmount != null) {
+              const sureText = typeof row.sureAmount === 'number' 
+                ? (row.sureAmount < 0 ? `-$${Math.abs(row.sureAmount).toLocaleString()}` : `$${row.sureAmount.toLocaleString()}`) 
+                : String(row.sureAmount);
+              const gambleText = typeof row.gamble === 'string' ? row.gamble : String(row.gamble);
+              const titleText = row.title || `Task ${i + 1}`;
+              
+              const isSure = choiceStr === 'A';
+              const isGamble = choiceStr === 'B';
+              
+              return (
+                <div key={i} className={`border rounded-lg overflow-hidden flex flex-col w-full text-sm transition-colors ${isSure ? 'border-blue-200' : isGamble ? 'border-amber-200' : 'border-slate-200'}`}>
+                  <div className={`px-4 py-2 border-b flex justify-between items-center ${isSure ? 'bg-blue-50 border-blue-100 text-blue-800' : isGamble ? 'bg-amber-50 border-amber-100 text-amber-800' : 'bg-slate-50 border-slate-100 text-slate-700'}`}>
+                    <span className="font-semibold">{titleText}</span>
+                    <span className={`px-2.5 py-1 rounded-md text-xs font-bold ${isSure ? 'bg-blue-100 text-blue-700' : isGamble ? 'bg-amber-100 text-amber-700' : 'bg-slate-200 text-slate-500'}`}>
+                      {isSure ? 'Selected: Sure Amount' : isGamble ? 'Selected: Gamble' : 'No selection'}
+                    </span>
+                  </div>
+                  <div className="flex divide-x divide-slate-100 bg-white">
+                    <div className={`flex-1 p-3 flex flex-col items-center text-center ${isSure ? 'bg-blue-50/30 text-blue-900' : 'text-slate-500'}`}>
+                      <span className="text-xs text-slate-400 mb-1 uppercase tracking-wider font-semibold">Sure Amount</span>
+                      <span className={isSure ? 'font-bold' : ''}>{sureText}</span>
+                    </div>
+                    <div className={`flex-1 p-3 flex flex-col items-center text-center ${isGamble ? 'bg-amber-50/30 text-amber-900' : 'text-slate-500'}`}>
+                      <span className="text-xs text-slate-400 mb-1 uppercase tracking-wider font-semibold">Gamble</span>
+                      <span className={isGamble ? 'font-bold' : ''}>{gambleText}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+            return <div key={i} className="text-slate-600 bg-slate-50 p-2 rounded">Choice {i + 1}: {choiceStr}</div>;
+          })}
+        </div>
+      );
     }
+    
+    // Normal array/object rendering
+    let textContent = '';
     if (Array.isArray(parsed)) {
-      return parsed.join(', ');
+      textContent = parsed.join(', ');
+    } else {
+      textContent = Object.entries(parsed)
+        .map(([key, value]) => `${key}: ${typeof value === 'object' ? JSON.stringify(value) : value}`)
+        .join('\n');
     }
-    return Object.entries(parsed)
-      .map(([key, value]) => `${key}: ${typeof value === 'object' ? JSON.stringify(value) : value}`)
-      .join('\n');
+    return <div className="text-slate-900 bg-slate-50 px-3 py-2 rounded-lg inline-block max-w-full break-words whitespace-pre-wrap">{textContent}</div>;
   }
 
-  return String(ans);
+  return <div className="text-slate-900 bg-slate-50 px-3 py-2 rounded-lg inline-block max-w-full break-words whitespace-pre-wrap">{String(ans)}</div>;
 };
 
 const Responses: React.FC = () => {
@@ -234,7 +264,7 @@ const Responses: React.FC = () => {
                                 return (
                                   <div key={qId} className="text-sm border-b border-slate-100 pb-3 last:border-0 last:pb-0">
                                     <div className="text-slate-500 mb-1 font-medium break-words whitespace-normal">{questionTitle}</div>
-                                    <div className="text-slate-900 bg-slate-50 px-3 py-2 rounded-lg inline-block max-w-full break-words whitespace-pre-wrap">
+                                    <div className="w-full">
                                       {formatAnswerForAdmin(ans, q)}
                                     </div>
                                   </div>
