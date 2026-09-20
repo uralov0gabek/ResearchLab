@@ -17,7 +17,7 @@ const toStableString = (val: any): string => {
 
 const STORAGE_KEY = 'survey_session_data';
 // Versioned cache key — bump version to invalidate old cached question formats
-const QUESTIONS_CACHE_KEY = 'survey_questions_cache_v4';
+const QUESTIONS_CACHE_KEY = 'survey_questions_cache_v5';
 
 
 export const useSurvey = () => {
@@ -49,16 +49,56 @@ export const useSurvey = () => {
         
         let allQuestions: Question[] = [];
         if (Array.isArray(data)) {
-          allQuestions = data.map((q: any) => ({
-            id: String(q.id),
-            type: q.type,
-            // Always store as stable string — prevents React Error #31 (object rendered as child)
-            text: toStableString(q.question_text),
-            block_name: toStableString(q.block_name),
-            options: q.options,
-            required: Boolean(q.required),
-            dependsOn: q.conditional_logic
-          }));
+          data.forEach((q: any) => {
+            if (q.type === 'lottery' && Array.isArray(q.options) && q.options.length > 0) {
+              const groups: Record<string, any[]> = {};
+              q.options.forEach((opt: any) => {
+                let groupName = 'Tasks';
+                if (opt.title) {
+                  const match = opt.title.match(/^[a-zA-Z]+[0-9]+/);
+                  if (match) groupName = match[0];
+                }
+                if (!groups[groupName]) groups[groupName] = [];
+                groups[groupName].push(opt);
+              });
+              
+              const groupNames = Object.keys(groups);
+              if (groupNames.length <= 1) {
+                allQuestions.push({
+                  id: String(q.id),
+                  type: q.type,
+                  text: toStableString(q.question_text),
+                  block_name: toStableString(q.block_name),
+                  options: q.options,
+                  required: Boolean(q.required),
+                  dependsOn: q.conditional_logic
+                });
+              } else {
+                groupNames.forEach(groupName => {
+                  allQuestions.push({
+                    id: `${q.id}__${groupName}`,
+                    originalId: String(q.id),
+                    type: q.type,
+                    text: toStableString(q.question_text),
+                    block_name: `${toStableString(q.block_name)} - ${groupName}`,
+                    options: groups[groupName],
+                    required: Boolean(q.required),
+                    dependsOn: q.conditional_logic
+                  });
+                });
+              }
+            } else {
+              allQuestions.push({
+                id: String(q.id),
+                type: q.type,
+                text: toStableString(q.question_text),
+                block_name: toStableString(q.block_name),
+                options: q.options,
+                required: Boolean(q.required),
+                dependsOn: q.conditional_logic
+              });
+            }
+          });
         }
 
         sessionStorage.setItem(QUESTIONS_CACHE_KEY, JSON.stringify(allQuestions));
@@ -178,9 +218,50 @@ export const useSurvey = () => {
         }
       });
 
+      // Merge split lottery questions back into their original IDs in correct order
+      const mergedAnswers: Record<string, any> = {};
+      
+      // First, copy non-split answers
+      Object.keys(finalAnswers).forEach(key => {
+        const question = questions.find(q => q.id === key);
+        if (!question || !question.originalId) {
+          mergedAnswers[key] = finalAnswers[key];
+        }
+      });
+
+      // Then, merge split lottery answers in the exact order of the 'questions' array
+      questions.forEach(question => {
+        if (question.originalId) {
+          const originalId = question.originalId;
+          const key = question.id;
+          
+          if (!mergedAnswers[originalId]) {
+            mergedAnswers[originalId] = {
+              type: 'lottery_response',
+              choices: [],
+              selectedValues: {},
+              rows: []
+            };
+          }
+          const lotAns = finalAnswers[key] as any;
+          if (lotAns && lotAns.rows) {
+            const startIndex = mergedAnswers[originalId].rows.length;
+            mergedAnswers[originalId].rows.push(...lotAns.rows);
+            if (lotAns.choices) {
+              mergedAnswers[originalId].choices.push(...lotAns.choices);
+            }
+            if (lotAns.selectedValues) {
+              Object.keys(lotAns.selectedValues).forEach(k => {
+                mergedAnswers[originalId].selectedValues[startIndex + parseInt(k)] = lotAns.selectedValues[k];
+              });
+            }
+          }
+        }
+      });
+
       await apiFetch('/responses', {
         method: 'POST',
-        body: JSON.stringify({ userId: sessionId, answers: finalAnswers })
+        body: JSON.stringify({ userId: sessionId, answers: mergedAnswers })
       });
 
       sessionStorage.removeItem(STORAGE_KEY);

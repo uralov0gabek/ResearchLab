@@ -16,6 +16,7 @@ export interface QuestionCondition {
 
 export interface Question {
   id: string;
+  originalId?: string;
   type: QuestionType;
   text: string;
   block_name: string;
