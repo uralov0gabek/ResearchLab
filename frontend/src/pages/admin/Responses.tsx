@@ -69,19 +69,42 @@ const formatAnswerForAdmin = (ans: any, q?: any): React.ReactNode => {
       );
     }
     
-    // Normal array/object rendering
-    let textContent = '';
+    // Normal array rendering (Multiple Choice)
     if (Array.isArray(parsed)) {
-      textContent = parsed.join(', ');
-    } else {
-      textContent = Object.entries(parsed)
-        .map(([key, value]) => `${key}: ${typeof value === 'object' ? JSON.stringify(value) : value}`)
-        .join('\n');
+      return (
+        <div className="flex flex-wrap gap-2 mt-2">
+          {parsed.map((item, idx) => (
+            <span key={idx} className="bg-blue-50 text-blue-700 border border-blue-100 px-3 py-1.5 rounded-lg text-sm font-medium shadow-sm">
+              {String(item)}
+            </span>
+          ))}
+        </div>
+      );
     }
-    return <div className="text-slate-900 bg-slate-50 px-3 py-2 rounded-lg inline-block max-w-full break-words whitespace-pre-wrap">{textContent}</div>;
+    
+    // Object rendering (Matrix or other complex answers)
+    return (
+      <div className="w-full mt-2 border border-slate-200 rounded-lg overflow-hidden shadow-sm">
+        <table className="w-full text-left border-collapse text-sm">
+          <tbody className="divide-y divide-slate-100 bg-white">
+            {Object.entries(parsed).map(([key, value], idx) => (
+              <tr key={idx} className="hover:bg-slate-50 transition-colors">
+                <td className="px-4 py-3 font-medium text-slate-600 w-1/2 sm:w-1/3 border-r border-slate-100 bg-slate-50/50">{key}</td>
+                <td className="px-4 py-3 text-slate-900 break-words whitespace-pre-wrap">{typeof value === 'object' ? JSON.stringify(value) : String(value)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
   }
 
-  return <div className="text-slate-900 bg-slate-50 px-3 py-2 rounded-lg inline-block max-w-full break-words whitespace-pre-wrap">{String(ans)}</div>;
+  // Primitive strings or numbers
+  return (
+    <div className="text-slate-800 bg-slate-50/80 px-4 py-3 rounded-lg w-full break-words whitespace-pre-wrap text-sm border border-slate-200 shadow-sm mt-2 font-medium">
+      {String(ans)}
+    </div>
+  );
 };
 
 const Responses: React.FC = () => {
