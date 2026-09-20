@@ -17,7 +17,7 @@ const toStableString = (val: any): string => {
 
 const STORAGE_KEY = 'survey_session_data';
 // Versioned cache key — bump version to invalidate old cached question formats
-const QUESTIONS_CACHE_KEY = 'survey_questions_cache_v5';
+const QUESTIONS_CACHE_KEY = 'survey_questions_cache_v6';
 
 
 export const useSurvey = () => {
@@ -52,27 +52,33 @@ export const useSurvey = () => {
           data.forEach((q: any) => {
             if (q.type === 'lottery' && Array.isArray(q.options) && q.options.length > 0) {
               const groups: Record<string, any[]> = {};
-              q.options.forEach((opt: any) => {
-                let groupName = 'Tasks';
-                if (opt.title) {
-                  const match = opt.title.match(/^[a-zA-Z]+[0-9]+/);
-                  if (match) groupName = match[0];
-                }
-                if (!groups[groupName]) groups[groupName] = [];
-                groups[groupName].push(opt);
-              });
+              const validOptions = q.options.filter((opt: any) => typeof opt === 'object' && opt.sureAmount != null);
+              
+              if (validOptions.length > 0) {
+                validOptions.forEach((opt: any) => {
+                  let groupName = 'Tasks';
+                  if (opt.title) {
+                    const match = opt.title.match(/^[a-zA-Z]+[0-9]+/);
+                    if (match) groupName = match[0];
+                  }
+                  if (!groups[groupName]) groups[groupName] = [];
+                  groups[groupName].push(opt);
+                });
+              }
               
               const groupNames = Object.keys(groups);
               if (groupNames.length <= 1) {
-                allQuestions.push({
-                  id: String(q.id),
-                  type: q.type,
-                  text: toStableString(q.question_text),
-                  block_name: toStableString(q.block_name),
-                  options: q.options,
-                  required: Boolean(q.required),
-                  dependsOn: q.conditional_logic
-                });
+                if (validOptions.length > 0) {
+                  allQuestions.push({
+                    id: String(q.id),
+                    type: q.type,
+                    text: toStableString(q.question_text),
+                    block_name: toStableString(q.block_name),
+                    options: validOptions, // Use validOptions here
+                    required: Boolean(q.required),
+                    dependsOn: q.conditional_logic
+                  });
+                }
               } else {
                 groupNames.forEach(groupName => {
                   allQuestions.push({
