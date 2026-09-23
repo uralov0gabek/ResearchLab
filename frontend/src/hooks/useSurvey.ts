@@ -17,7 +17,7 @@ const toStableString = (val: any): string => {
 
 const STORAGE_KEY = 'survey_session_data';
 // Versioned cache key — bump version to invalidate old cached question formats
-const QUESTIONS_CACHE_KEY = 'survey_questions_cache_v6';
+const QUESTIONS_CACHE_KEY = 'survey_questions_cache_v7';
 
 
 export const useSurvey = () => {
@@ -58,8 +58,11 @@ export const useSurvey = () => {
                 validOptions.forEach((opt: any) => {
                   let groupName = 'Tasks';
                   if (opt.title) {
-                    const match = opt.title.match(/^[a-zA-Z]+[0-9]+/);
-                    if (match) groupName = match[0];
+                    const match = opt.title.match(/^[a-zA-Z]+/);
+                    if (match) {
+                      // Only group by the first letters (e.g., 'G' instead of 'G1')
+                      groupName = match[0].toUpperCase();
+                    }
                   }
                   if (!groups[groupName]) groups[groupName] = [];
                   groups[groupName].push(opt);
