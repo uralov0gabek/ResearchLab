@@ -168,7 +168,9 @@ export const processUserCPT = (answers: Record<string, unknown>, questions: any[
             return {
               sureAmount: task.sure_amount,
               gamble: `${task.gamble_a_prob}% chance to win ${task.gamble_a_amount} or ${task.gamble_b_prob}% chance to win ${task.gamble_b_amount}`,
-              block: task.block
+              block: task.block,
+              gamble_a_amount: task.gamble_a_amount,
+              gamble_b_amount: task.gamble_b_amount
             };
           }
           return opt;
@@ -185,6 +187,19 @@ export const processUserCPT = (answers: Record<string, unknown>, questions: any[
     
     let hasWin = blockType === 'gain' || firstGamble.includes('win');
     let hasLose = blockType === 'loss' || blockType === 'mixed' || firstGamble.includes('lose');
+
+    if (firstRow?.gamble_a_amount !== undefined && firstRow?.gamble_b_amount !== undefined) {
+      const a = Number(firstRow.gamble_a_amount);
+      const b = Number(firstRow.gamble_b_amount);
+      if (a >= 0 && b >= 0) {
+        hasWin = true; hasLose = false;
+      } else if (a <= 0 && b <= 0) {
+        hasWin = false; hasLose = true;
+      } else {
+        hasWin = true; hasLose = true;
+      }
+    }
+    
     const isMixed = blockType === 'mixed' || (hasWin && hasLose);
 
     // Reconstruct a proper LotteryResponse with rows
@@ -196,7 +211,7 @@ export const processUserCPT = (answers: Record<string, unknown>, questions: any[
         const opt = Array.isArray(q.options) ? q.options[0] : null;
         return opt && t.id === opt.id;
       });
-      const gambleX = firstTask ? Math.abs(firstTask.gamble_a_amount) : 
+      const gambleX = firstTask ? Math.max(firstTask.gamble_a_amount, firstTask.gamble_b_amount) : 
         parseInt((firstGamble.match(/win\s+\$?([\d,]+)/i) || [])[1]?.replace(/,/g,'') || '0');
       const ce = calculateCE(lotteryRes, false);
       const a = gambleX > 0 ? calculateAlpha(ce, gambleX) : null;
@@ -207,7 +222,7 @@ export const processUserCPT = (answers: Record<string, unknown>, questions: any[
         const opt = Array.isArray(q.options) ? q.options[0] : null;
         return opt && t.id === opt.id;
       });
-      const gambleL = firstTask ? Math.abs(firstTask.gamble_a_amount) :
+      const gambleL = firstTask ? Math.abs(Math.min(firstTask.gamble_a_amount, firstTask.gamble_b_amount)) :
         parseInt((firstGamble.match(/lose\s+\$?([\d,]+)/i) || [])[1]?.replace(/,/g,'') || '0');
       const ce = calculateCE(lotteryRes, true);
       const b = gambleL > 0 ? calculateBeta(ce, gambleL) : null;
@@ -218,7 +233,7 @@ export const processUserCPT = (answers: Record<string, unknown>, questions: any[
         const opt = Array.isArray(q.options) ? q.options[0] : null;
         return opt && t.id === opt.id;
       });
-      const L = firstTask ? Math.abs(firstTask.gamble_b_amount) :
+      const L = firstTask ? Math.abs(Math.min(firstTask.gamble_a_amount, firstTask.gamble_b_amount)) :
         parseInt((firstGamble.match(/lose\s+\$?([\d,]+)/i) || [])[1]?.replace(/,/g,'') || '0');
       if (L > 0) mixedTasks.push({ ans: lotteryRes, L });
     }
