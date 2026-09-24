@@ -159,8 +159,23 @@ export const processUserCPT = (answers: Record<string, unknown>, questions: any[
     let rows: { sureAmount: number; gamble: string; block?: string }[] = [];
 
     if (ans.rows && Array.isArray(ans.rows) && ans.rows.length > 0 && typeof ans.rows[0] === 'object' && ans.rows[0]?.sureAmount != null) {
-      // Rows already in correct format
-      rows = ans.rows;
+      // Rows already in correct format, but might be missing gamble fields for older data
+      rows = ans.rows.map((row: any, i: number) => {
+        let task;
+        if (cptTasks && cptTasks.length > 0) {
+          const optId = (q.options && q.options[i]) ? q.options[i].id : row.id;
+          task = cptTasks.find((t: any) => t.id === optId);
+        }
+        if (task) {
+          return { 
+            ...row, 
+            gamble_a_amount: task.gamble_a_amount, 
+            gamble_b_amount: task.gamble_b_amount,
+            block: task.block 
+          };
+        }
+        return row;
+      });
     } else if (cptTasks && cptTasks.length > 0 && ans.rows && Array.isArray(ans.rows)) {
       // rows are task IDs or "Option N" strings — look up from cptTasks
       // Try to match by index using the question's options (which contain {id, sureAmount, gamble})
