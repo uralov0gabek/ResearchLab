@@ -62,11 +62,15 @@ export const calculateMixedGStar = (lotteryRes: LotteryResponse) => {
   const acceptedGains: number[] = [];
 
   lotteryRes.rows.forEach((row, i) => {
-    // In Mixed lotteries, the gamble changes, so we need to extract the Win amount from the text
-    // "50% chance to win 400,000 UZS, 50% chance to lose 500,000 UZS"
-    const match = row.gamble.match(/win \$?([\d,]+)\s*(?:UZS|USD)?/i);
-    if (!match) return;
-    const gain = parseInt(match[1].replace(/,/g, ''), 10);
+    let gain: number;
+    const rowAny = row as any;
+    if (rowAny.gamble_a_amount !== undefined && rowAny.gamble_b_amount !== undefined) {
+      gain = Math.max(rowAny.gamble_a_amount, rowAny.gamble_b_amount);
+    } else {
+      const match = row.gamble.match(/win \$?([\d,]+)\s*(?:UZS|USD)?/i);
+      if (!match) return;
+      gain = parseInt(match[1].replace(/,/g, ''), 10);
+    }
 
     const choice = getLotteryChoice(lotteryRes, i);
     if (choice === 'A') {
