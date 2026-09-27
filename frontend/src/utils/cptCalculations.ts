@@ -29,27 +29,27 @@ export const calculateCE = (
     }
   });
 
-  if (acceptedAmounts.length > 0 && rejectedAmounts.length > 0) {
-    const highestRejected = Math.max(...rejectedAmounts);
-    const lowestAccepted = Math.min(...acceptedAmounts);
-    return (highestRejected + lowestAccepted) / 2;
-  }
-
-  // Corner cases
   const allAmounts = rows.map(r => isLoss ? Math.abs(r.sureAmount) : r.sureAmount);
   const minAmount = Math.min(...allAmounts);
   const maxAmount = Math.max(...allAmounts);
+  const step = allAmounts.length > 1 ? Math.abs(allAmounts[1] - allAmounts[0]) : (maxAmount - minAmount) / rows.length || (isLoss ? 20 : 200000);
 
-  if (acceptedAmounts.length === 0) {
-    // Always chose gamble
-    // PDF: "If they always choose gamble: set CE just below smallest sure amount"
-    // For losses: if they always gamble, they reject all sure losses.
-    return Math.max(0, minAmount - (maxAmount - minAmount) / rows.length); 
-  }
-
-  if (rejectedAmounts.length === 0) {
-    // Always chose sure
-    return maxAmount + (maxAmount - minAmount) / rows.length;
+  if (!isLoss) {
+    if (acceptedAmounts.length > 0 && rejectedAmounts.length > 0) {
+      const highestRejected = Math.max(...rejectedAmounts);
+      const lowestAccepted = Math.min(...acceptedAmounts);
+      return (highestRejected + lowestAccepted) / 2;
+    }
+    if (acceptedAmounts.length === 0) return maxAmount + step / 2; // Always gamble
+    if (rejectedAmounts.length === 0) return Math.max(0, minAmount - step / 2); // Always sure
+  } else {
+    if (acceptedAmounts.length > 0 && rejectedAmounts.length > 0) {
+      const highestAccepted = Math.max(...acceptedAmounts);
+      const lowestRejected = Math.min(...rejectedAmounts);
+      return (highestAccepted + lowestRejected) / 2;
+    }
+    if (acceptedAmounts.length === 0) return Math.max(0, minAmount - step / 2); // Always gamble
+    if (rejectedAmounts.length === 0) return maxAmount + step / 2; // Always sure
   }
 
   return null;

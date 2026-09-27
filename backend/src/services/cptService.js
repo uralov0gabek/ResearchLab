@@ -12,35 +12,47 @@ const calculateCertaintyEquivalent = (choices, isLoss = false) => {
   // Sort by absolute sure amount
   const sorted = [...choices].sort((a, b) => Math.abs(a.sureAmount) - Math.abs(b.sureAmount));
   
-  let highestRejected = null;
-  let lowestAccepted = null;
-
-  for (const item of sorted) {
-    const amt = Math.abs(item.sureAmount);
-    if (item.choice === 'B') {
-      highestRejected = amt;
-    } else if (item.choice === 'A') {
-      if (lowestAccepted === null) {
-        lowestAccepted = amt;
-      }
-    }
-  }
-
   const minAmt = Math.abs(sorted[0].sureAmount);
   const maxAmt = Math.abs(sorted[sorted.length - 1].sureAmount);
   const step = Math.abs(sorted[1]?.sureAmount - sorted[0]?.sureAmount) || 100000;
 
-  if (highestRejected === null) {
-    // Always chose Sure (A). Extremely risk-averse (for gains) or risk-seeking (for losses).
-    return (minAmt - step / 2) * (isLoss ? -1 : 1);
-  }
+  if (!isLoss) {
+    // GAINS: We expect B (Gamble) at low amounts, and A (Sure) at high amounts.
+    let highestRejected = null; // Highest amount where B was chosen
+    let lowestAccepted = null;  // Lowest amount where A was chosen
 
-  if (lowestAccepted === null) {
-    // Always chose Gamble (B). Extremely risk-seeking (for gains) or risk-averse (for losses).
-    return (maxAmt + step / 2) * (isLoss ? -1 : 1);
-  }
+    for (const item of sorted) {
+      const amt = Math.abs(item.sureAmount);
+      if (item.choice === 'B') {
+        highestRejected = amt;
+      } else if (item.choice === 'A') {
+        if (lowestAccepted === null) lowestAccepted = amt;
+      }
+    }
 
-  return ((highestRejected + lowestAccepted) / 2) * (isLoss ? -1 : 1);
+    if (highestRejected === null) return minAmt - step / 2; // Always chose Sure
+    if (lowestAccepted === null) return maxAmt + step / 2;  // Always chose Gamble
+    
+    return (highestRejected + lowestAccepted) / 2;
+  } else {
+    // LOSSES: We expect A (Sure) at low absolute amounts, and B (Gamble) at high absolute amounts.
+    let highestAccepted = null; // Highest abs amount where A was chosen
+    let lowestRejected = null;  // Lowest abs amount where B was chosen
+
+    for (const item of sorted) {
+      const amt = Math.abs(item.sureAmount);
+      if (item.choice === 'A') {
+        highestAccepted = amt;
+      } else if (item.choice === 'B') {
+        if (lowestRejected === null) lowestRejected = amt;
+      }
+    }
+
+    if (lowestRejected === null) return (maxAmt + step / 2) * -1; // Always chose Sure (worse than -maxAmt)
+    if (highestAccepted === null) return (minAmt - step / 2) * -1; // Always chose Gamble (better than -minAmt)
+
+    return ((highestAccepted + lowestRejected) / 2) * -1;
+  }
 };
 
 /**
