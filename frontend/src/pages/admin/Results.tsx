@@ -114,7 +114,7 @@ const Results: React.FC = () => {
       cohorts
     };
 
-  }, [questions, responses]);
+  }, [questions, responses, cptTasks]);
 
   if (isLoading) {
     return (

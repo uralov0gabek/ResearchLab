@@ -47,7 +47,7 @@ export const useSurvey = () => {
 
         const data = await apiFetch('/questions').catch(() => []);
         
-        let allQuestions: Question[] = [];
+        const allQuestions: Question[] = [];
         if (Array.isArray(data)) {
           data.forEach((q: any) => {
             if (q.type === 'lottery' && Array.isArray(q.options) && q.options.length > 0) {

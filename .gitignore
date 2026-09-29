@@ -29,6 +29,8 @@ build/
 .env.*.local
 *.env
 !.env.example
+.env.production
+.env.development
 
 # Dependency directories
 /.pnp
@@ -65,3 +67,5 @@ playwright/
 # Project specifics
 loss_aversion_research.pdf
 loss_aversion_research.md
+patch_survey_builder.js
+checkQuestions.js

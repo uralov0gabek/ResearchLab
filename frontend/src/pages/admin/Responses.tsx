@@ -19,7 +19,7 @@ const formatAnswerForAdmin = (ans: any, q?: any): React.ReactNode => {
   if (typeof ans === 'string') {
     try {
       parsed = JSON.parse(ans);
-    } catch (e) {
+    } catch {
       // not JSON string
     }
   }
