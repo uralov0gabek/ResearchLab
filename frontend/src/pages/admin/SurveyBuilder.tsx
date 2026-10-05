@@ -177,7 +177,7 @@ const SurveyBuilder: React.FC = () => {
         method: 'POST',
         body: JSON.stringify({ questionsToUpsert, idsToDelete: [] })
       });
-      sessionStorage.removeItem('survey_questions_cache_v4');
+      sessionStorage.removeItem('survey_questions_cache_v7');
     } catch (err) {
       console.error('Failed to save renamed block:', err);
     }
@@ -291,7 +291,7 @@ const SurveyBuilder: React.FC = () => {
         body: JSON.stringify({ questionsToUpsert, idsToDelete })
       });
 
-      sessionStorage.removeItem('survey_questions_cache_v4'); // Clear frontend cache on save
+      sessionStorage.removeItem('survey_questions_cache_v7'); // Clear frontend cache on save
       setSaveMessage('Saved successfully!');
       setTimeout(() => setSaveMessage(null), 3000);
       // Don't call fetchQuestions() here — it would override local state with old DB data
@@ -803,7 +803,11 @@ const SurveyBuilder: React.FC = () => {
                               id: t.id,
                               title: t.title,
                               sureAmount: t.sure_amount,
-                              gamble: `${t.gamble_a_prob}% chance to win ${t.gamble_a_amount} or ${t.gamble_b_prob}% chance to win ${t.gamble_b_amount}`
+                              gamble: `${t.gamble_a_prob}% chance to win ${t.gamble_a_amount} or ${t.gamble_b_prob}% chance to win ${t.gamble_b_amount}`,
+                              gamble_a_amount: t.gamble_a_amount,
+                              gamble_a_prob: t.gamble_a_prob,
+                              gamble_b_amount: t.gamble_b_amount,
+                              gamble_b_prob: t.gamble_b_prob
                             }));
                             updateQuestion(q.id, { options: allFormatted });
                           }}
@@ -846,7 +850,11 @@ const SurveyBuilder: React.FC = () => {
                                                 id: task.id,
                                                 title: task.title,
                                                 sureAmount: task.sure_amount,
-                                                gamble: `${task.gamble_a_prob}% chance to win ${task.gamble_a_amount} or ${task.gamble_b_prob}% chance to win ${task.gamble_b_amount}`
+                                                gamble: `${task.gamble_a_prob}% chance to win ${task.gamble_a_amount} or ${task.gamble_b_prob}% chance to win ${task.gamble_b_amount}`,
+                                                gamble_a_amount: task.gamble_a_amount,
+                                                gamble_a_prob: task.gamble_a_prob,
+                                                gamble_b_amount: task.gamble_b_amount,
+                                                gamble_b_prob: task.gamble_b_prob
                                               });
                                             } else {
                                               newOptions = newOptions.filter((opt: any) => opt.id !== task.id);

@@ -144,7 +144,12 @@ const calculateCPTParameters = (answers, cptTasks) => {
           }
         }
       }
-      return { ...t, choice };
+      return { 
+        ...t, 
+        choice,
+        sureAmount: t.sureAmount ?? t.sure_amount,
+        gambleAmount1: t.gambleAmount1 ?? t.gamble_a_amount
+      };
     }).filter(t => t.choice);
   };
 

@@ -58,9 +58,8 @@ export const useSurvey = () => {
                 validOptions.forEach((opt: any) => {
                   let groupName = 'Tasks';
                   if (opt.title) {
-                    const match = opt.title.match(/^[a-zA-Z]+/);
+                    const match = opt.title.match(/^[a-zA-Z]+[0-9]*/);
                     if (match) {
-                      // Only group by the first letters (e.g., 'G' instead of 'G1')
                       groupName = match[0].toUpperCase();
                     }
                   }
@@ -184,8 +183,12 @@ export const useSurvey = () => {
   const activeBlocks = useMemo(() => {
     // Only blocks that have AT LEAST ONE visible question
     const blockNames = visibleQuestions.map(q => q.block_name);
-    return Array.from(new Set(blockNames));
-  }, [visibleQuestions]);
+    const uniqueVisible = Array.from(new Set(blockNames));
+    
+    // Sort based on the original order of blocks in the full 'questions' array
+    const originalOrder = Array.from(new Set(questions.map(q => q.block_name)));
+    return uniqueVisible.sort((a, b) => originalOrder.indexOf(a) - originalOrder.indexOf(b));
+  }, [visibleQuestions, questions]);
 
   useEffect(() => {
     if (activeBlocks.length > 0 && currentStep >= activeBlocks.length) {
