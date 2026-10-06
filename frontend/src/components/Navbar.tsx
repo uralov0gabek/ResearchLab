@@ -2,12 +2,14 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Compass, Menu, X } from 'lucide-react';
+import { Compass, Menu, X, Sun, Moon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useTheme } from '../context/ThemeContext';
 
 const Navbar: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { t } = useTranslation();
+  const { theme, toggleTheme } = useTheme();
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
@@ -38,7 +40,7 @@ const Navbar: React.FC = () => {
   };
 
   return (
-    <nav className="fixed top-0 left-0 w-full z-50 bg-[#FFFDF5] border-b border-gray-200 shadow-sm overflow-x-hidden">
+    <nav className="fixed top-0 left-0 w-full z-50 bg-[#FFFDF5] dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 shadow-sm overflow-x-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
           <Link to="/" className="flex items-center gap-2" onClick={closeMenu}>
@@ -51,13 +53,13 @@ const Navbar: React.FC = () => {
           </Link>
           
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-8">
+          <div className="hidden md:flex items-center gap-6">
             {navLinks.map((link) => (
               link.isExternal ? (
                 <a 
                   key={link.name}
                   href={link.href} 
-                  className="text-sm font-medium text-gray-600 hover:text-slate-900 transition-colors py-2 px-1 mx-1 hover-slide-line"
+                  className="text-sm font-medium text-gray-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors py-2 px-1 mx-1 hover-slide-line"
                 >
                   {link.name}
                 </a>
@@ -65,19 +67,34 @@ const Navbar: React.FC = () => {
                 <Link 
                   key={link.name}
                   to={link.href} 
-                  className="text-sm font-medium text-gray-600 hover:text-slate-900 transition-colors py-2 px-1 mx-1 hover-slide-line"
+                  className="text-sm font-medium text-gray-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors py-2 px-1 mx-1 hover-slide-line"
                 >
                   {link.name}
                 </Link>
               )
             ))}
+            {/* Theme Toggle */}
+            <button
+              onClick={toggleTheme}
+              aria-label="Toggle dark mode"
+              className="p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            >
+              {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            </button>
           </div>
 
           {/* Mobile menu button */}
-          <div className="flex md:hidden items-center">
+          <div className="flex md:hidden items-center gap-2">
+            <button
+              onClick={toggleTheme}
+              aria-label="Toggle dark mode"
+              className="p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            >
+              {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            </button>
             <button 
               onClick={toggleMobileMenu}
-              className="p-3 text-gray-600 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 rounded-md"
+              className="p-3 text-gray-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white focus:outline-none focus:ring-2 focus:ring-slate-900 rounded-md"
               aria-label="Toggle menu"
               aria-expanded={isMobileMenuOpen}
             >
@@ -93,7 +110,7 @@ const Navbar: React.FC = () => {
 
       {/* Mobile Menu Overlay */}
       {isMobileMenuOpen && (
-        <div className="md:hidden fixed inset-0 z-50 bg-[#FFFDF5] flex flex-col h-screen pt-20 px-4">
+        <div className="md:hidden fixed inset-0 z-50 bg-[#FFFDF5] dark:bg-slate-900 flex flex-col h-screen pt-20 px-4">
           {/* Top bar inside the menu overlay to match the header styling */}
           <div className="absolute top-0 left-0 w-full px-4 sm:px-6 h-20 flex justify-between items-center border-b border-gray-200 bg-[#FFFDF5]">
             <Link to="/" className="flex items-center gap-2" onClick={closeMenu}>

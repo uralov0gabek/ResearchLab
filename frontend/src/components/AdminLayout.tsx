@@ -9,14 +9,18 @@ import {
   LineChart,
   Settings as SettingsIcon,
   LogOut,
-  Menu
+  Menu,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useTheme } from '../context/ThemeContext';
 
 const AdminLayout: React.FC = () => {
   const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { t } = useTranslation();
+  const { theme, toggleTheme } = useTheme();
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -34,7 +38,7 @@ const AdminLayout: React.FC = () => {
 
 
   return (
-    <div className="min-h-screen bg-[#FFFDF5] font-sans">
+    <div className="min-h-screen bg-[#FFFDF5] dark:bg-slate-950 font-sans">
       {/* Mobile Sidebar Overlay */}
       {isSidebarOpen && (
         <div 
@@ -80,7 +84,18 @@ const AdminLayout: React.FC = () => {
           })}
         </nav>
 
-        <div className="p-4 border-t border-slate-800 space-y-4">
+        <div className="p-4 border-t border-slate-800 space-y-2">
+          {/* Theme Toggle */}
+          <button
+            onClick={toggleTheme}
+            className="flex items-center w-full px-3 py-2.5 text-sm font-medium text-slate-300 rounded-lg hover:bg-slate-800 hover:text-white transition-colors"
+            aria-label="Toggle dark mode"
+          >
+            {theme === 'dark'
+              ? <Sun className="w-5 h-5 mr-3 flex-shrink-0" />
+              : <Moon className="w-5 h-5 mr-3 flex-shrink-0" />}
+            {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+          </button>
 
           <button
             onClick={handleSignOut}
@@ -95,7 +110,7 @@ const AdminLayout: React.FC = () => {
       {/* Main Content Wrapper */}
       <div className="flex flex-col min-h-screen md:ml-64">
         {/* Mobile Header */}
-        <header className="md:hidden flex items-center h-16 px-4 bg-white border-b border-slate-200 sticky top-0 z-30">
+        <header className="md:hidden flex items-center h-16 px-4 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-30">
           <button 
             onClick={() => setIsSidebarOpen(true)}
             className="p-2 -ml-2 text-slate-600 hover:text-slate-900 focus:outline-none"
@@ -107,7 +122,7 @@ const AdminLayout: React.FC = () => {
         </header>
 
         {/* Main Content */}
-        <main className="flex-1 overflow-x-hidden p-4 md:p-8">
+        <main className="flex-1 overflow-x-hidden p-4 md:p-8 dark:text-slate-100">
           <div className="max-w-6xl mx-auto">
             <Outlet />
           </div>
