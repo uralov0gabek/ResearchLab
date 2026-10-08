@@ -1,9 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { LineChart, Download, Users, Brain, Loader2 } from 'lucide-react';
 import { apiFetch } from '../../services/api/apiClient';
-import { processUserCPT } from '../../utils/cptCalculations';
-import type { Question } from '../../types';
-import { getLocalizedText } from '../../utils/localization';
+import { getResponseCPT } from '../../utils/cptCalculations';
 
 interface GroupStats {
   count: number;
@@ -14,22 +12,14 @@ interface GroupStats {
 
 const Results: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
-  const [questions, setQuestions] = useState<Question[]>([]);
   const [responses, setResponses] = useState<any[]>([]);
-  const [cptTasks, setCptTasks] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setIsLoading(true);
-              const [qData, rData, cData] = await Promise.all([
-          apiFetch('/questions').catch(() => []),
-          apiFetch('/responses').catch(() => []),
-          apiFetch('/cpt-tasks').catch(() => [])
-        ]);
-        setQuestions(qData);
+        const rData = await apiFetch('/responses');
         setResponses(Array.isArray(rData) ? rData : (rData.responses || []));
-        setCptTasks(Array.isArray(cData) ? cData : []);
       } catch (err) {
         console.error('Failed to fetch data', err);
       } finally {
@@ -40,7 +30,7 @@ const Results: React.FC = () => {
   }, []);
 
   const stats = useMemo(() => {
-    if (!questions.length || !responses.length) return null;
+    if (!responses.length) return null;
 
     let totalAlpha = 0, totalBeta = 0, totalLambda = 0;
     let aCount = 0, bCount = 0, lCount = 0;
@@ -61,40 +51,24 @@ const Results: React.FC = () => {
     };
 
     responses.forEach(res => {
-      const answers = res.answers || {};
-      const cpt = processUserCPT(answers, questions, cptTasks);
-      
-      // Determine cohort based on the activity question
-      const r1Q = questions.find(q => {
-        const qAny = q as any;
-        const textStr = qAny.question_text || qAny.text || qAny.title || '';
-        const localized = getLocalizedText(textStr, 'en').toLowerCase();
-        return localized.includes('what best describes your main current activity') || localized.startsWith('r1.');
-      });
+      const cpt = getResponseCPT(res);
       let cohortKey = 'Students & Others';
       
-      if (r1Q && answers[r1Q.id]) {
-        // role may be an object (localized) or a string — normalize it safely
-        const rawRole = answers[r1Q.id];
-        const role = typeof rawRole === 'string' 
-          ? rawRole 
-          : (typeof rawRole === 'object' ? getLocalizedText(rawRole, 'en') : String(rawRole ?? ''));
-        if (role.toLowerCase().includes('entrepreneur')) cohortKey = 'Founders';
-        else if (role.toLowerCase().includes('investor') || role.toLowerCase().includes('venture capitalist')) cohortKey = 'Investors (VC)';
-        else if (role.toLowerCase().includes('employee')) cohortKey = 'Employees/Workers';
-      }
+      if (res.role === 'Founder') cohortKey = 'Founders';
+      else if (res.role === 'VC') cohortKey = 'Investors (VC)';
+      else if (res.role === 'Worker') cohortKey = 'Employees/Workers';
 
       cohorts[cohortKey].count++;
 
-      if (cpt.alpha) {
+      if (cpt.alpha !== null) {
         totalAlpha += cpt.alpha; aCount++;
         cohortSums[cohortKey].a += cpt.alpha; cohortSums[cohortKey].ac++;
       }
-      if (cpt.beta) {
+      if (cpt.beta !== null) {
         totalBeta += cpt.beta; bCount++;
         cohortSums[cohortKey].b += cpt.beta; cohortSums[cohortKey].bc++;
       }
-      if (cpt.lambda) {
+      if (cpt.lambda !== null) {
         totalLambda += cpt.lambda; lCount++;
         cohortSums[cohortKey].l += cpt.lambda; cohortSums[cohortKey].lc++;
       }
@@ -114,7 +88,7 @@ const Results: React.FC = () => {
       cohorts
     };
 
-  }, [questions, responses]);
+  }, [responses]);
 
   if (isLoading) {
     return (
@@ -143,7 +117,7 @@ const Results: React.FC = () => {
     );
   }
 
-  const formatParam = (val: number | null) => val ? val.toFixed(3) : '-';
+  const formatParam = (val: number | null) => val !== null ? val.toFixed(3) : '-';
 
   const handleExportCSV = () => {
     if (!stats || stats.totalResponses === 0) return;

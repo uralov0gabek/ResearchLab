@@ -5,12 +5,12 @@ import { Loader2, Users, ClipboardList, CheckCircle } from 'lucide-react';
 
 interface ChartDataGen {
   generation: string;
-  avgRiskTolerance: number;
+  avgRiskTolerance: number | null;
 }
 
 interface ChartDataRole {
   role: string;
-  avgLossAversion: number;
+  avgLossAversion: number | null;
 }
 
 const AdminOverview: React.FC = () => {

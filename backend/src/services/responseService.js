@@ -1,5 +1,5 @@
 const { supabaseAdmin } = require('../config/supabase');
-const { calculateCPTParameters } = require('./cptService');
+const { calculateCPTParameters, snapshotLotteryAnswers, getResponseCPT, extractRole } = require('./cptService');
 const AppError = require('../utils/AppError');
 
 /**
@@ -13,21 +13,18 @@ const saveResponse = async (userId, answers) => {
     throw new AppError('Missing or invalid answers', 400);
   }
 
-  // Fetch CPT tasks for calculation
-  const { data: cptTasks, error: cptError } = await supabaseAdmin.from('cpt_tasks').select('*');
-  if (cptError) {
-    console.error('Failed to fetch cpt tasks for calculation', cptError);
-    // Non-fatal, we just can't calculate CPT parameters
-  }
-  
-  // Calculate CPT Parameters dynamically
-  let final_calculated = null;
-  if (cptTasks && cptTasks.length > 0) {
-    final_calculated = calculateCPTParameters(answers, cptTasks);
-  }
+  const [taskResult, questionResult] = await Promise.all([
+    supabaseAdmin.from('cpt_tasks').select('*'),
+    supabaseAdmin.from('questions').select('*'),
+  ]);
+  if (taskResult.error || questionResult.error) throw new AppError('Unable to load survey configuration', 500);
+  const cptTasks = taskResult.data || [];
+  const questions = questionResult.data || [];
+  const snapshots = snapshotLotteryAnswers(answers, cptTasks, questions);
+  const final_calculated = calculateCPTParameters(snapshots, cptTasks, questions);
 
   // Inject session ID into answers for tracking without violating FK
-  const finalAnswers = { ...answers, session_id: userId };
+  const finalAnswers = { ...snapshots, session_id: userId };
   const completed_at = new Date().toISOString();
 
   // Insert into responses table
@@ -104,8 +101,14 @@ const fetchResponses = async () => {
   
   if (respError) throw new AppError(respError.message || 'Database error', 500);
 
+  const [taskResult, questionResult] = await Promise.all([
+    supabaseAdmin.from('cpt_tasks').select('*'),
+    supabaseAdmin.from('questions').select('*'),
+  ]);
+  if (taskResult.error || questionResult.error) throw new AppError('Unable to load response calculation data', 500);
+
   const processed = responses.map(r => {
-    const cpt = r.calculated_cpt_parameters || {};
+    const cpt = getResponseCPT(r, taskResult.data || [], questionResult.data || []);
     
     return {
       id: r.id,
@@ -118,7 +121,9 @@ const fetchResponses = async () => {
       alpha: cpt.alpha?.toFixed(3) || 'N/A',
       beta: cpt.beta?.toFixed(3) || 'N/A',
       lambda: cpt.lambda?.toFixed(3) || 'N/A',
-      answers: r.answers || {}
+      answers: r.answers || {},
+      calculated_cpt_parameters: cpt,
+      role: extractRole(r.answers || {}, questionResult.data || []),
     };
   });
 

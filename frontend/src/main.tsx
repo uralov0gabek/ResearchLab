@@ -4,6 +4,7 @@ import './index.css'
 import App from './App.tsx'
 import ErrorBoundary from './components/ErrorBoundary'
 import { ThemeProvider } from './context/ThemeContext'
+import { AuthProvider } from './context/AuthContext'
 import './i18n';
 
 try {
@@ -11,7 +12,9 @@ try {
     <StrictMode>
       <ThemeProvider>
         <ErrorBoundary>
-          <App />
+          <AuthProvider>
+            <App />
+          </AuthProvider>
         </ErrorBoundary>
       </ThemeProvider>
     </StrictMode>,

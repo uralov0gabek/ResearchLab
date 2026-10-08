@@ -2,23 +2,9 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Question, AnswerValue, SessionData } from '../types';
 import { apiFetch } from '../services/api/apiClient';
-
-/**
- * Converts any value (string or {en,ru,uz} object) into a stable string.
- * If it's an object with localized keys, we store the raw JSON so comparisons work.
- * Rendering code uses getLocalizedText to display the correct language.
- */
-const toStableString = (val: any): string => {
-  if (!val) return '';
-  if (typeof val === 'string') return val;
-  if (typeof val === 'object') return JSON.stringify(val);
-  return String(val);
-};
+import { normalizeQuestions, getSurveySections, reconcileLotteryAnswers, mergeSurveyAnswers } from '../utils/surveyQuestions';
 
 const STORAGE_KEY = 'survey_session_data';
-// Versioned cache key — bump version to invalidate old cached question formats
-const QUESTIONS_CACHE_KEY = 'survey_questions_cache_v7';
-
 
 export const useSurvey = () => {
   const navigate = useNavigate();
@@ -31,94 +17,26 @@ export const useSurvey = () => {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  // Fetch Questions
   useEffect(() => {
+    let mounted = true;
+    sessionStorage.removeItem('survey_questions_cache_v7');
     const fetchQuestions = async () => {
       try {
-        setIsLoading(true);
-
-        const cachedQuestions = sessionStorage.getItem(QUESTIONS_CACHE_KEY);
-        if (cachedQuestions) {
-          const parsedCache = JSON.parse(cachedQuestions);
-          setQuestions(parsedCache);
-          setIsLoading(false);
-          return;
-        }
-
-        const data = await apiFetch('/questions').catch(() => []);
-        
-        let allQuestions: Question[] = [];
-        if (Array.isArray(data)) {
-          data.forEach((q: any) => {
-            if (q.type === 'lottery' && Array.isArray(q.options) && q.options.length > 0) {
-              const groups: Record<string, any[]> = {};
-              const validOptions = q.options.filter((opt: any) => typeof opt === 'object' && opt.sureAmount != null);
-              
-              if (validOptions.length > 0) {
-                validOptions.forEach((opt: any) => {
-                  let groupName = 'Tasks';
-                  if (opt.title) {
-                    const match = opt.title.match(/^[a-zA-Z]+[0-9]*/);
-                    if (match) {
-                      groupName = match[0].toUpperCase();
-                    }
-                  }
-                  if (!groups[groupName]) groups[groupName] = [];
-                  groups[groupName].push(opt);
-                });
-              }
-              
-              const groupNames = Object.keys(groups);
-              if (groupNames.length <= 1) {
-                if (validOptions.length > 0) {
-                  allQuestions.push({
-                    id: String(q.id),
-                    type: q.type,
-                    text: toStableString(q.question_text),
-                    block_name: toStableString(q.block_name),
-                    options: validOptions, // Use validOptions here
-                    required: Boolean(q.required),
-                    dependsOn: q.conditional_logic
-                  });
-                }
-              } else {
-                groupNames.forEach(groupName => {
-                  allQuestions.push({
-                    id: `${q.id}__${groupName}`,
-                    originalId: String(q.id),
-                    type: q.type,
-                    text: toStableString(q.question_text),
-                    block_name: `${toStableString(q.block_name)} - ${groupName}`,
-                    options: groups[groupName],
-                    required: Boolean(q.required),
-                    dependsOn: q.conditional_logic
-                  });
-                });
-              }
-            } else {
-              allQuestions.push({
-                id: String(q.id),
-                type: q.type,
-                text: toStableString(q.question_text),
-                block_name: toStableString(q.block_name),
-                options: q.options,
-                required: Boolean(q.required),
-                dependsOn: q.conditional_logic
-              });
-            }
-          });
-        }
-
-        sessionStorage.setItem(QUESTIONS_CACHE_KEY, JSON.stringify(allQuestions));
-        setQuestions(allQuestions);
-      } catch (err) {
-        console.error('Error fetching questions:', err);
+        const data = await apiFetch('/questions', { cache: 'no-store' });
+        if (mounted) setQuestions(normalizeQuestions(Array.isArray(data) ? data : []));
+      } catch (error) {
+        console.error('Error fetching questions:', error);
       } finally {
-        setIsLoading(false);
+        if (mounted) setIsLoading(false);
       }
     };
     fetchQuestions();
+    return () => { mounted = false; };
   }, []);
+
+  useEffect(() => {
+    if (questions.length) setAnswers(previous => reconcileLotteryAnswers(questions, previous));
+  }, [questions]);
 
   // Initialize or Load Session
   useEffect(() => {
@@ -180,15 +98,8 @@ export const useSurvey = () => {
     });
   }, [answers, questions]);
 
-  const activeBlocks = useMemo(() => {
-    // Only blocks that have AT LEAST ONE visible question
-    const blockNames = visibleQuestions.map(q => q.block_name);
-    const uniqueVisible = Array.from(new Set(blockNames));
-    
-    // Sort based on the original order of blocks in the full 'questions' array
-    const originalOrder = Array.from(new Set(questions.map(q => q.block_name)));
-    return uniqueVisible.sort((a, b) => originalOrder.indexOf(a) - originalOrder.indexOf(b));
-  }, [visibleQuestions, questions]);
+  const sections = useMemo(() => getSurveySections(visibleQuestions), [visibleQuestions]);
+  const activeBlocks = useMemo(() => sections.map(section => section.name), [sections]);
 
   useEffect(() => {
     if (activeBlocks.length > 0 && currentStep >= activeBlocks.length) {
@@ -221,91 +132,28 @@ export const useSurvey = () => {
     setIsSubmitting(true);
     setSubmitError(null);
     try {
-      const finalAnswers = { ...answers };
-      questions.forEach(q => {
-        if (q.type === 'slider' && finalAnswers[q.id] === undefined) {
-          const min = (q.options as any)?.min || 0;
-          const max = (q.options as any)?.max || 100;
-          finalAnswers[q.id] = (min + max) / 2;
-        }
-      });
-
-      // Merge split lottery questions back into their original IDs in correct order
-      const mergedAnswers: Record<string, any> = {};
-      
-      // First, copy non-split answers
-      Object.keys(finalAnswers).forEach(key => {
-        const question = questions.find(q => q.id === key);
-        if (!question || !question.originalId) {
-          mergedAnswers[key] = finalAnswers[key];
-        }
-      });
-
-      // Then, merge split lottery answers in the exact order of the 'questions' array
-      questions.forEach(question => {
-        if (question.originalId) {
-          const originalId = question.originalId;
-          const key = question.id;
-          
-          if (!mergedAnswers[originalId]) {
-            mergedAnswers[originalId] = {
-              type: 'lottery_response',
-              choices: [],
-              selectedValues: {},
-              rows: []
-            };
-          }
-          const lotAns = finalAnswers[key] as any;
-          if (lotAns && lotAns.rows) {
-            const startIndex = mergedAnswers[originalId].rows.length;
-            mergedAnswers[originalId].rows.push(...lotAns.rows);
-            if (lotAns.choices) {
-              mergedAnswers[originalId].choices.push(...lotAns.choices);
-            }
-            if (lotAns.selectedValues) {
-              Object.keys(lotAns.selectedValues).forEach(k => {
-                mergedAnswers[originalId].selectedValues[startIndex + parseInt(k)] = lotAns.selectedValues[k];
-              });
-            }
-          }
-        }
-      });
-
+      const mergedAnswers = mergeSurveyAnswers(visibleQuestions, answers);
       await apiFetch('/responses', {
         method: 'POST',
-        body: JSON.stringify({ userId: sessionId, answers: mergedAnswers })
+        body: JSON.stringify({ userId: sessionId, answers: mergedAnswers }),
       });
-
       sessionStorage.removeItem(STORAGE_KEY);
       setIsSubmitted(true);
-    } catch (err: unknown) {
-      console.error('Submit error:', err);
-      setSubmitError(err instanceof Error ? err.message : 'Failed to submit survey.');
+    } catch (error: unknown) {
+      console.error('Submit error:', error);
+      setSubmitError(error instanceof Error ? error.message : 'Failed to submit survey.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const currentBlockName = activeBlocks[currentStep];
-  const currentBlockQuestions = visibleQuestions.filter(q => q.block_name === currentBlockName);
+  const currentBlockName = sections[currentStep]?.name || '';
+  const currentBlockQuestions = sections[currentStep]?.questions || [];
 
   return {
-    sessionId,
-    currentStep,
-    answers,
-    questions,
-    visibleQuestions,
-    activeBlocks,
-    currentBlockName,
-    currentBlockQuestions,
-    isLoading,
-    isSubmitting,
-    isSubmitted,
-    submitError,
-    handleAnswerChange,
-    handleNext,
-    handleBack,
-    handleExit,
-    handleSubmit
+    sessionId, currentStep, answers, questions, visibleQuestions,
+    activeBlocks, currentBlockName, currentBlockQuestions,
+    isLoading, isSubmitting, isSubmitted, submitError,
+    handleAnswerChange, handleNext, handleBack, handleExit, handleSubmit,
   };
 };

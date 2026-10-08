@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { apiFetch } from '../../services/api/apiClient';
 import { Loader2, Search, Download, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 import { getLocalizedText } from '../../utils/localization';
-import { processUserCPT } from '../../utils/cptCalculations';
+import { getResponseCPT } from '../../utils/cptCalculations';
+import type { CPTSummary } from '../../utils/cptCalculations';
 
 interface ProcessedResponse {
   id: string;
@@ -12,6 +13,7 @@ interface ProcessedResponse {
   beta: string;
   lambda: string;
   answers?: Record<string, any>;
+  calculated_cpt_parameters?: CPTSummary;
 }
 
 const formatAnswerForAdmin = (ans: any, q?: any): React.ReactNode => {
@@ -19,7 +21,7 @@ const formatAnswerForAdmin = (ans: any, q?: any): React.ReactNode => {
   if (typeof ans === 'string') {
     try {
       parsed = JSON.parse(ans);
-    } catch (e) {
+    } catch {
       // not JSON string
     }
   }
@@ -111,21 +113,18 @@ const Responses: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [responsesData, setResponsesData] = useState<ProcessedResponse[]>([]);
   const [questions, setQuestions] = useState<any[]>([]);
-  const [cptTasks, setCptTasks] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [data, qData, cData] = await Promise.all([
+      const [data, qData] = await Promise.all([
         apiFetch('/responses'),
         apiFetch('/questions').catch(() => []),
-        apiFetch('/cpt-tasks').catch(() => [])
       ]);
       setResponsesData(data.responses || []);
       setQuestions(qData || []);
-      setCptTasks(Array.isArray(cData) ? cData : []);
     } catch (err) {
       console.error('Error fetching responses data:', err);
       setResponsesData([]);
@@ -144,7 +143,7 @@ const Responses: React.FC = () => {
     const csvContent = "data:text/csv;charset=utf-8," 
       + headers.join(",") + "\n"
       + responsesData.map(r => {
-          const cpt = processUserCPT(r.answers || {}, questions, cptTasks);
+          const cpt = getResponseCPT(r);
           return `${r.id},${r.user_id || 'Anonymous'},${r.date},${formatParam(cpt.alpha)},${formatParam(cpt.beta)},${formatParam(cpt.lambda)}`;
         }).join("\n");
     const encodedUri = encodeURI(csvContent);
@@ -179,7 +178,7 @@ const Responses: React.FC = () => {
     }
   };
 
-  const formatParam = (val: number | null) => val ? val.toFixed(3) : 'N/A';
+  const formatParam = (val: number | null) => val !== null ? val.toFixed(3) : 'N/A';
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden animate-in fade-in duration-500 max-w-full">
@@ -256,9 +255,9 @@ const Responses: React.FC = () => {
                       {row.user_id || 'Anonymous'}
                     </td>
                     <td className="px-6 py-4 text-sm text-slate-700 font-medium">{row.date}</td>
-                    <td className="px-6 py-4 text-sm text-slate-700">{formatParam(processUserCPT(row.answers || {}, questions, cptTasks).alpha)}</td>
-                    <td className="px-6 py-4 text-sm text-slate-700">{formatParam(processUserCPT(row.answers || {}, questions, cptTasks).beta)}</td>
-                    <td className="px-6 py-4 text-sm text-slate-700">{formatParam(processUserCPT(row.answers || {}, questions, cptTasks).lambda)}</td>
+                    <td className="px-6 py-4 text-sm text-slate-700">{formatParam(getResponseCPT(row).alpha)}</td>
+                    <td className="px-6 py-4 text-sm text-slate-700">{formatParam(getResponseCPT(row).beta)}</td>
+                    <td className="px-6 py-4 text-sm text-slate-700">{formatParam(getResponseCPT(row).lambda)}</td>
                     <td className="px-6 py-4 text-sm text-right">
                       <button
                         onClick={(e) => handleDelete(row.id, e)}

@@ -5,6 +5,11 @@ export interface LotteryRow {
   sureAmount: number;
   gamble: string;
   title?: string;
+  block?: string;
+  gamble_a_amount?: number;
+  gamble_a_prob?: number;
+  gamble_b_amount?: number;
+  gamble_b_prob?: number;
 }
 
 export interface QuestionCondition {

@@ -6,6 +6,7 @@ import {
 import { apiFetch } from '../../services/api/apiClient';
 import { useTranslation } from 'react-i18next';
 import { getLocalizedText } from '../../utils/localization';
+import { sortLotteryRows } from '../../utils/surveyQuestions';
 
 type QuestionType = 'single_choice' | 'multiple_choice' | 'short_text' | 'number_input' | 'lottery' | 'matrix' | 'slider';
 
@@ -201,7 +202,10 @@ const SurveyBuilder: React.FC = () => {
       options: ['Option 1'],
       required: false
     };
-    setQuestions([...questions, newQ]);
+    const lastIndex = questions.findLastIndex(q => q.block_name === activeBlock);
+    const next = [...questions];
+    next.splice(lastIndex + 1, 0, newQ);
+    setQuestions(next);
   };
 
 
@@ -809,7 +813,7 @@ const SurveyBuilder: React.FC = () => {
                               gamble_b_amount: t.gamble_b_amount,
                               gamble_b_prob: t.gamble_b_prob
                             }));
-                            updateQuestion(q.id, { options: allFormatted });
+                            updateQuestion(q.id, { options: sortLotteryRows(allFormatted) });
                           }}
                           className="text-xs font-semibold text-[#F4C542] hover:text-[#d4a832] bg-[#F4C542]/10 px-3 py-1.5 rounded-lg transition-colors"
                         >
@@ -859,7 +863,7 @@ const SurveyBuilder: React.FC = () => {
                                             } else {
                                               newOptions = newOptions.filter((opt: any) => opt.id !== task.id);
                                             }
-                                            updateQuestion(q.id, { options: newOptions });
+                                            updateQuestion(q.id, { options: sortLotteryRows(newOptions) });
                                           }}
                                           className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                                         />

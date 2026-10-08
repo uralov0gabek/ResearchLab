@@ -2,7 +2,8 @@ const { supabaseAdmin } = require('../config/supabase');
 const AppError = require('../utils/AppError');
 
 const fetchQuestions = async () => {
-  const { data, error } = await supabaseAdmin.from('questions').select('*').order('order_index', { ascending: true });
+  const { data, error } = await supabaseAdmin.from('questions').select('*')
+    .order('order_index', { ascending: true }).order('id', { ascending: true });
   if (error) throw new AppError(error.message || 'Database error while fetching questions', 500);
   return data;
 };

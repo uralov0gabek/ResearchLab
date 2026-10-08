@@ -1,254 +1,212 @@
-/**
- * Calculates the Certainty Equivalent (CE) for a set of choices.
- *
- * @param {Array<{sureAmount: number, choice: 'A' | 'B'}>} choices - Array of user choices
- * @param {boolean} [isLoss=false] - Whether the gamble involves losses
- * @returns {number} The calculated Certainty Equivalent
- */
-const calculateCertaintyEquivalent = (choices, isLoss = false) => {
-  // A = Sure Amount, B = Gamble
-  if (choices.length === 0) return 0;
-  
-  // Sort by absolute sure amount
-  const sorted = [...choices].sort((a, b) => Math.abs(a.sureAmount) - Math.abs(b.sureAmount));
-  
-  let highestRejected = null;
-  let lowestAccepted = null;
+const CALCULATION_VERSION = 2;
 
-  for (const item of sorted) {
-    const amt = Math.abs(item.sureAmount);
-    if (item.choice === 'B') {
-      highestRejected = amt;
-    } else if (item.choice === 'A') {
-      if (lowestAccepted === null) {
-        lowestAccepted = amt;
-      }
-    }
-  }
-
-  const minAmt = Math.abs(sorted[0].sureAmount);
-  const maxAmt = Math.abs(sorted[sorted.length - 1].sureAmount);
-  const step = Math.abs(sorted[1]?.sureAmount - sorted[0]?.sureAmount) || 100000;
-
-  if (highestRejected === null) {
-    // Always chose Sure (A). Extremely risk-averse (for gains) or risk-seeking (for losses).
-    return (minAmt - step / 2) * (isLoss ? -1 : 1);
-  }
-
-  if (lowestAccepted === null) {
-    // Always chose Gamble (B). Extremely risk-seeking (for gains) or risk-averse (for losses).
-    return (maxAmt + step / 2) * (isLoss ? -1 : 1);
-  }
-
-  return ((highestRejected + lowestAccepted) / 2) * (isLoss ? -1 : 1);
+const parseValue = (value) => {
+  if (typeof value !== 'string') return value;
+  try { return JSON.parse(value); } catch { return value; }
 };
 
-/**
- * Calculates the Indifference Point for mixed gambles (Loss Aversion).
- *
- * @param {Array<{gambleAmount1: number, choice: 'A' | 'B'}>} choices - User choices
- * @returns {number} The indifference point gain amount
- */
-const calculateIndifferenceMixed = (choices) => {
-  
-  const sorted = [...choices].sort((a, b) => a.gambleAmount1 - b.gambleAmount1);
-  
-  let highestRejected = null; // highest gain rejected (chose A, sure 0)
-  let lowestAccepted = null;  // lowest gain accepted (chose B, gamble)
-
-  for (const item of sorted) {
-    if (item.choice === 'A') {
-      highestRejected = item.gambleAmount1;
-    } else if (item.choice === 'B') {
-      if (lowestAccepted === null) {
-        lowestAccepted = item.gambleAmount1;
-      }
-    }
-  }
-
-  const minAmt = sorted[0].gambleAmount1;
-  const maxAmt = sorted[sorted.length - 1].gambleAmount1;
-  const step = (sorted[1]?.gambleAmount1 - sorted[0]?.gambleAmount1) || 100000;
-
-  if (highestRejected === null) {
-    // Always accepted the gamble (always B)
-    return minAmt - step / 2;
-  }
-  if (lowestAccepted === null) {
-    // Always rejected the gamble (always A)
-    return maxAmt + step / 2;
-  }
-
-  return (highestRejected + lowestAccepted) / 2;
+const numeric = (value) => {
+  if (value === null || value === undefined || value === '') return null;
+  const result = Number(value);
+  return Number.isFinite(result) ? result : null;
 };
 
-/**
- * Computes Alpha or Beta (Value sensitivity for gains or losses).
- * Uses the proxy formula: α = ln(p) / ln(CE/x).
- *
- * @param {number} ce - Certainty Equivalent
- * @param {number} p - Probability of non-zero outcome
- * @param {number} x - Gamble amount
- * @returns {number} The calculated sensitivity parameter
- */
-const computeAlphaBeta = (ce, p, x) => {
-  if (ce >= x) return 0.1; // extreme boundary
-  return Math.log(p) / Math.log(ce / x);
+const localizedText = (value) => {
+  const parsed = parseValue(value);
+  if (parsed && typeof parsed === 'object') return parsed.en || parsed.uz || parsed.ru || '';
+  return typeof parsed === 'string' ? parsed : '';
 };
 
-/**
- * Main entry point to calculate all CPT Parameters from user answers and database tasks.
- *
- * @param {Object} answers - Mapping of question IDs to user answers
- * @param {Array} cptTasks - Raw task configuration from the database
- * @returns {Object} Object containing { alpha, beta, lambda, gamma, delta }
- */
-const calculateCPTParameters = (answers, cptTasks) => {
-  const blocks = {
-    G1: [], G2: [], G3: [],
-    L1: [], L2: [], L3: [],
-    M1: [], M2: [], M3: []
+const validChoice = (value) => value === 'A' || value === 'B';
+const average = (values) => values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : null;
+
+// Saved row fields take precedence over editable task definitions.
+const resolveRow = (row, tasks, options, index) => {
+  const saved = row && typeof row === 'object' ? row : {};
+  const id = saved.id || (typeof row === 'string' ? row : null);
+  const option = id ? options.find(item => item?.id === id) : options[index];
+  const task = tasks.find(item => item.id === (id || option?.id));
+  const data = { ...task, ...option, ...saved };
+  const resolved = {
+    ...data,
+    sureAmount: numeric(saved.sureAmount ?? saved.sure_amount ?? option?.sureAmount ?? option?.sure_amount ?? task?.sure_amount),
+    gamble_a_amount: numeric(data.gamble_a_amount),
+    gamble_a_prob: numeric(data.gamble_a_prob),
+    gamble_b_amount: numeric(data.gamble_b_amount),
+    gamble_b_prob: numeric(data.gamble_b_prob),
   };
 
-  cptTasks.forEach(task => {
-    // Map properties from new question schema or older cpt_tasks schema
-    const title = task.question_text || task.title || '';
-    // Extract 2-char block prefix: e.g. "G1a. ..." -> "G1", "M3b. ..." -> "M3"
-    const match = title.match(/^([A-Z]\d)/);
-    const blockPrefix = match ? match[1] : '';
-    
-    // Inject raw data back into the task for the calculator
-    if (task.options && task.options[0] && task.options[0].raw) {
-      Object.assign(task, task.options[0].raw);
-    }
-    
-    if (blockPrefix && blocks[blockPrefix] !== undefined) {
-       blocks[blockPrefix].push(task);
-    }
+  // Older snapshots may contain only the displayed two-outcome description.
+  const outcomes = [...localizedText(saved.gamble || data.gamble).matchAll(/([\d.]+)%\s+chance\s+to\s+(win|lose)\s+\$?(-?[\d,]+(?:\.\d+)?)/gi)];
+  if (outcomes.length === 2) {
+    outcomes.forEach((match, i) => {
+      const key = i === 0 ? 'a' : 'b';
+      const amount = Number(match[3].replace(/,/g, ''));
+      if (saved.gamble && saved['gamble_' + key + '_amount'] == null) {
+        resolved['gamble_' + key + '_amount'] = match[2].toLowerCase() === 'lose' ? -Math.abs(amount) : amount;
+      } else resolved['gamble_' + key + '_amount'] ??= match[2].toLowerCase() === 'lose' ? -Math.abs(amount) : amount;
+      if (saved.gamble && saved['gamble_' + key + '_prob'] == null) resolved['gamble_' + key + '_prob'] = Number(match[1]);
+      else resolved['gamble_' + key + '_prob'] ??= Number(match[1]);
+    });
+  }
+  return resolved;
+};
+
+const snapshotLotteryAnswers = (answers, tasks = [], questions = []) => Object.fromEntries(
+  Object.entries(answers).map(([id, value]) => {
+    const answer = parseValue(value);
+    if (!answer || answer.type !== 'lottery_response') return [id, value];
+    const question = questions.find(item => String(item.id) === id.split('__')[0]);
+    const options = parseValue(question?.options);
+    const fallbackOptions = Array.isArray(options) ? options : [];
+    const rows = Array.isArray(answer.rows) && answer.rows.length ? answer.rows : fallbackOptions;
+    const choices = rows.map((_, i) => validChoice(answer.selectedValues?.[i]) ? answer.selectedValues[i] : answer.choices?.[i] ?? null);
+    return [id, {
+      ...answer,
+      choices,
+      selectedValues: Object.fromEntries(choices.map((choice, i) => [i, choice]).filter(([, choice]) => validChoice(choice))),
+      rows: rows.map((row, i) => resolveRow(row, tasks, fallbackOptions, i)),
+    }];
+  })
+);
+
+// Lower choices must precede upper choices; otherwise there is no unique switch.
+const switchingPoint = (rows, amountKey, lowerChoice, upperLimit = Infinity) => {
+  if (rows.length < 2 || rows.some(row => !validChoice(row.choice))) return null;
+  const sorted = [...rows].sort((a, b) => a[amountKey] - b[amountKey]);
+  const unique = [];
+  for (const row of sorted) {
+    const previous = unique[unique.length - 1];
+    if (previous?.[amountKey] === row[amountKey]) {
+      if (previous.choice !== row.choice) return null;
+    } else unique.push(row);
+  }
+  if (unique.length < 2) return null;
+  const switchIndex = unique.findIndex(row => row.choice !== lowerChoice);
+  if (switchIndex !== -1 && unique.slice(switchIndex).some(row => row.choice === lowerChoice)) return null;
+  const amounts = unique.map(row => row[amountKey]);
+  const min = amounts[0], max = amounts[amounts.length - 1];
+  if (switchIndex === 0) return (Math.max(0, min - (amounts[1] - min)) + min) / 2;
+  if (switchIndex === -1) {
+    const upper = Math.min(upperLimit, max + (max - amounts[amounts.length - 2]));
+    return upper > max ? (max + upper) / 2 : null;
+  }
+  return (amounts[switchIndex - 1] + amounts[switchIndex]) / 2;
+};
+
+const calculateCertaintyEquivalent = (rows, isLoss = false, maximum = Infinity) => switchingPoint(
+  rows.map(row => ({ ...row, amount: Math.abs(row.sureAmount) })), 'amount', isLoss ? 'A' : 'B', maximum
+);
+
+const computeAlphaBeta = (ce, probability, amount) => {
+  if (!(ce > 0 && ce < amount && probability > 0 && probability < 1)) return null;
+  const result = Math.log(probability) / Math.log(ce / amount);
+  return Number.isFinite(result) && result > 0 ? result : null;
+};
+
+const calculateCPTParameters = (answers, tasks = [], questions = []) => {
+  const snapshots = snapshotLotteryAnswers(answers || {}, tasks, questions);
+  const rows = [], seen = new Set();
+  Object.values(snapshots).forEach(answer => {
+    if (answer?.type !== 'lottery_response') return;
+    answer.rows.forEach((row, i) => {
+      if (row.id && seen.has(row.id)) return;
+      if (row.id) seen.add(row.id);
+      rows.push({ ...row, choice: answer.choices[i] });
+    });
+  });
+  tasks.forEach(task => {
+    if (seen.has(task.id)) return;
+    const choice = snapshots['cpt_' + task.id] ?? snapshots[task.id];
+    if (validChoice(choice)) rows.push({ ...resolveRow(task, tasks, [], 0), choice });
   });
 
-  // Collect choices
-  const getChoices = (blockTasks) => {
-    return blockTasks.map(t => {
-      let choice = answers[`cpt_${t.id}`] || answers[t.id];
-      if (!choice) {
-        // Search inside nested lottery_response from frontend
-        for (const key in answers) {
-          const val = answers[key];
-          if (val && val.type === 'lottery_response' && Array.isArray(val.rows)) {
-            const rowIndex = val.rows.findIndex(r => r.id === t.id);
-            if (rowIndex !== -1 && val.choices) {
-              choice = val.choices[rowIndex];
-              break;
-            }
-          }
-        }
-      }
-      return { 
-        ...t, 
-        choice,
-        sureAmount: t.sureAmount ?? t.sure_amount,
-        gambleAmount1: t.gambleAmount1 ?? t.gamble_a_amount
-      };
-    }).filter(t => t.choice);
-  };
+  const groups = new Map();
+  rows.forEach(row => {
+    const a = row.gamble_a_amount, b = row.gamble_b_amount;
+    const pa = row.gamble_a_prob, pb = row.gamble_b_prob;
+    if ([a, b, pa, pb, row.sureAmount].some(value => value === null) ||
+        !(pa > 0 && pb > 0) || Math.abs(pa + pb - 100) > 0.000001) return;
+    let kind, amount, probability, gainProbability, lossProbability;
+    if (a * b < 0 && row.sureAmount === 0) {
+      kind = 'mixed';
+      amount = Math.abs(Math.min(a, b));
+      gainProbability = (a > 0 ? pa : pb) / 100;
+      lossProbability = (a < 0 ? pa : pb) / 100;
+    } else if ((a === 0 || b === 0) && a !== b) {
+      const outcome = a !== 0 ? a : b;
+      kind = outcome > 0 ? 'gain' : 'loss';
+      if ((kind === 'gain' && row.sureAmount < 0) || (kind === 'loss' && row.sureAmount > 0)) return;
+      amount = Math.abs(outcome);
+      probability = (a !== 0 ? pa : pb) / 100;
+    } else return;
+    // Preserve repeated task groups without restricting their names to a whitelist.
+    const groupId = row.group_id || row.group || localizedText(row.title).match(/^([a-z]+\d+)/i)?.[1].toUpperCase();
+    const key = JSON.stringify([groupId, kind, amount, probability, gainProbability, lossProbability]);
+    if (!groups.has(key)) groups.set(key, { kind, amount, probability, gainProbability, lossProbability, rows: [] });
+    groups.get(key).rows.push({ ...row, gain: Math.max(a, b) });
+  });
 
-  // 1. Calculate Alphas (Gains)
-  const alphas = ['G1', 'G2', 'G3'].map(b => {
-    const choices = getChoices(blocks[b]);
-    if (choices.length === 0) return null;
-    const ce = calculateCertaintyEquivalent(choices, false);
-    const x = choices[0].gamble_a_amount;
-    const p = choices[0].gamble_a_prob / 100.0;
-    return computeAlphaBeta(ce, p, x);
-  }).filter(a => a !== null);
-
-  const alpha = alphas.length > 0 ? alphas.reduce((a,b) => a+b, 0) / alphas.length : 1.0;
-
-  // 2. Calculate Betas (Losses)
-  const betas = ['L1', 'L2', 'L3'].map(b => {
-    const choices = getChoices(blocks[b]);
-    if (choices.length === 0) return null;
-    const ce = Math.abs(calculateCertaintyEquivalent(choices, true));
-    const x = Math.abs(choices[0].gamble_a_amount);
-    const p = choices[0].gamble_a_prob / 100.0;
-    return computeAlphaBeta(ce, p, x);
-  }).filter(b => b !== null);
-
-  const beta = betas.length > 0 ? betas.reduce((a,b) => a+b, 0) / betas.length : 1.0;
-
-  // 3. Calculate Lambda (Mixed)
-  // λ = (G*)^α / (-L)^β for a 50/50 mixed gamble
-  const lambdas = ['M1', 'M2', 'M3'].map(b => {
-    const choices = getChoices(blocks[b]);
-    if (choices.length === 0) return null;
-    const G_star = calculateIndifferenceMixed(choices);
-    const L = Math.abs(choices[0].gamble_b_amount); // fixed loss
-    
-    // Calculate λ
-    // p * v(G*) + p * v(-L) = 0 => (G*)^α - λ*(L)^β = 0 => λ = (G*)^α / L^β
-    const valG = Math.pow(G_star, alpha);
-    const valL = Math.pow(L, beta);
-    return valG / valL;
-  }).filter(l => l !== null && !isNaN(l));
-
-  const lambda = lambdas.length > 0 ? lambdas.reduce((a,b) => a+b, 0) / lambdas.length : 2.25;
-
-  // 4. Gamma & Delta (Probability Weighting)
-  // Approximate placeholders for standard CPT
-  const gamma = 0.65;
-  const delta = 0.65;
-
-  return { alpha, beta, lambda, gamma, delta };
+  const alphas = [], betas = [], mixed = [];
+  groups.forEach(group => {
+    if (group.kind === 'mixed') { mixed.push(group); return; }
+    const ce = calculateCertaintyEquivalent(group.rows, group.kind === 'loss', group.amount);
+    const parameter = computeAlphaBeta(ce, group.probability, group.amount);
+    if (parameter !== null) (group.kind === 'gain' ? alphas : betas).push(parameter);
+  });
+  const alpha = average(alphas), beta = average(betas), lambdas = [];
+  if (alpha !== null && beta !== null) {
+    mixed.forEach(group => {
+      const gain = switchingPoint(group.rows, 'gain', 'A');
+      if (!(gain > 0)) return;
+      const lambda = group.gainProbability * Math.pow(gain, alpha) /
+        (group.lossProbability * Math.pow(group.amount, beta));
+      if (Number.isFinite(lambda) && lambda > 0) lambdas.push(lambda);
+    });
+  }
+  // This CE estimator uses objective probabilities; weighting parameters are not fitted.
+  return { alpha, beta, lambda: average(lambdas), gamma: null, delta: null, version: CALCULATION_VERSION };
 };
 
-/**
- * Extracts generation cohort based on the user's birth year answer.
- *
- * @param {Object} answers - Mapping of question IDs to answers
- * @returns {string} The demographic cohort (Boomers, Gen X, Millennials, Gen Z)
- */
-const extractGeneration = (answers) => {
-  let birthYear = 1990; // default
-  for (const key in answers) {
-    const val = answers[key];
-    if (typeof val === 'string' && /^\d{4}$/.test(val.trim())) {
-      const num = Number(val.trim());
-      // Valid birth year check
-      if (num >= 1900 && num <= new Date().getFullYear()) { 
-        birthYear = num; 
-        break; 
-      }
-    }
+const getResponseCPT = (response, tasks = [], questions = []) => {
+  const saved = response.calculated_cpt_parameters;
+  if (saved?.version === CALCULATION_VERSION) {
+    return { ...saved, ...Object.fromEntries(['alpha', 'beta', 'lambda', 'gamma', 'delta'].map(key => [key, numeric(saved[key])])) };
   }
-  
+  return calculateCPTParameters(response.answers || {}, tasks, questions);
+};
+
+const findRoleQuestion = (questions) => questions.find(question => {
+  const text = localizedText(question.question_text || question.text || question.title).toLowerCase();
+  return /^r1[.\s:]/.test(text) || text.includes('what best describes your main current activity');
+}) || questions.find(question => {
+  const options = parseValue(question.options);
+  return Array.isArray(options) && options.filter(option => /entrepreneur|investor|employee|venture capitalist/i.test(localizedText(option))).length >= 2;
+});
+
+const extractGeneration = (answers, questions = []) => {
+  const question = questions.find(item => {
+    const text = localizedText(item.question_text || item.text || item.title).toLowerCase();
+    return /^d1[.\s:]/.test(text) || text.includes('year were you born') || text.includes('birth year');
+  });
+  const birthYear = numeric(question ? answers[question.id] : answers.birthYear ?? answers.birth_year);
+  if (!Number.isInteger(birthYear) || birthYear < 1900 || birthYear > new Date().getFullYear()) return null;
   if (birthYear <= 1964) return 'Boomers';
   if (birthYear <= 1980) return 'Gen X';
   if (birthYear <= 1996) return 'Millennials';
   return 'Gen Z';
 };
 
-/**
- * Extracts the user's role (Founder, VC, Worker) based on their answers.
- *
- * @param {Object} answers - Mapping of question IDs to answers
- * @returns {string} The parsed role
- */
-const extractRole = (answers) => {
-  for (const key in answers) {
-    const val = answers[key];
-    if (typeof val === 'string') {
-      const lower = val.toLowerCase();
-      if (lower.includes('i run my own business')) return 'Founder';
-      if (lower.includes('i am an investor') || lower.includes('venture capitalist')) return 'VC';
-      if (lower.includes('employee') || lower.includes('salary') || lower.includes('wage')) return 'Worker';
-    }
-  }
-  return 'Worker';
+const extractRole = (answers, questions = []) => {
+  const question = findRoleQuestion(questions);
+  const role = localizedText(question ? answers[question.id] : answers.role).toLowerCase();
+  if (/entrepreneur|i run my own business|founder/.test(role)) return 'Founder';
+  if (/investor|venture capitalist|^vc$/.test(role)) return 'VC';
+  if (/employee|salary|wage|worker/.test(role)) return 'Worker';
+  return 'Other';
 };
 
 module.exports = {
-  calculateCPTParameters,
-  extractGeneration,
-  extractRole
+  calculateCPTParameters, calculateCertaintyEquivalent, snapshotLotteryAnswers,
+  getResponseCPT, extractGeneration, extractRole,
 };

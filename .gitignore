@@ -58,7 +58,8 @@ backend/__tests__/
 backend/test_*.js
 *.test.ts
 *.test.tsx
-frontend/src/setupTests.ts
+!frontend/src/utils/surveyQuestions.test.ts
+!frontend/src/hooks/useSurvey.test.tsx
 playwright.config.ts
 playwright/
 

@@ -2,9 +2,9 @@ const { supabaseAdmin } = require('../config/supabase');
 const AppError = require('../utils/AppError');
 
 const fetchCptTasks = async () => {
-  const { data, error } = await supabaseAdmin.from('cpt_tasks').select('*').order('created_at', { ascending: false });
+  const { data, error } = await supabaseAdmin.from('cpt_tasks').select('*').order('title', { ascending: true });
   if (error) throw new AppError(error.message || 'Database error while fetching cpt tasks', 500);
-  return data;
+  return (data || []).sort((a, b) => a.title.localeCompare(b.title, 'en', { numeric: true }) || a.id.localeCompare(b.id));
 };
 
 const createCptTask = async (taskData) => {
